@@ -3,7 +3,12 @@
   TODO:
   UART Control
   Change ADC to Phy conversion ratio -> use 1~4k array to store data
-  SDMMC
+  SDMMC Log
+  SDMMC with FATFS and MDMA
+  DONE:
+  SDMMC Test with FATFS without MDMA
+  ADC DMA
+  Bypass SD Card detetion
 
 */
 /* USER CODE END Header */
@@ -105,6 +110,9 @@ const float DCVPLSB = 10.0f;
 const float DCAPLSB = 10.0f;
 const float ACAPLSB = 10.0f;
 int max_time = 0;
+int min_time = INT16_MAX;
+int prev_time = 0;
+int max_btw = 0;
 
 INV_Statustypedef inverter_state = STATE_INIT;
 __attribute__((section("._ADC1_Area"))) uint16_t ADC1_arr[4] = {0};
@@ -554,6 +562,16 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     {
       max_time = loop_time;
     }
+    if (loop_time < min_time)
+    {
+      min_time = loop_time;
+    }
+    int btw_time = tick_start - prev_time;
+    if (btw_time > max_btw)
+    {
+      max_btw = btw_time;
+    }
+    prev_time = tick_start;
   }
 }
 
