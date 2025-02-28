@@ -1,0 +1,15 @@
+{
+    "cortex-debug.armToolchainPath": "c:\\Users\\shink\\AppData\\Roaming\\Code\\User\\globalStorage\\bmd.stm32-for-vscode\\@xpack-dev-tools\\arm-none-eabi-gcc\\13.2.1-1.1.1\\.content\\bin",
+    "cortex-debug.openocdPath": "c:\\Users\\shink\\AppData\\Roaming\\Code\\User\\globalStorage\\bmd.stm32-for-vscode\\@xpack-dev-tools\\openocd\\0.12.0-3.1\\.content\\bin\\openocd.EXE",
+    "cortex-debug.variableUseNaturalFormat": true,
+    "files.associations": {
+        "main.h": "c",
+        "tim.h": "c",
+        "fatfs.h": "c",
+        "fdcan.h": "c",
+        "sdmmc.h": "c",
+        "usart.h": "c",
+        "gpio.h": "c",
+        "spi.h": "c"
+    }
+}
