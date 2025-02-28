@@ -86,7 +86,6 @@ Core/Src/i2c.c \
 Core/Src/inverter_state.c \
 Core/Src/lowpass_filter.c \
 Core/Src/main.c \
-Core/Src/mdma.c \
 Core/Src/memorymap.c \
 Core/Src/motor_control.c \
 Core/Src/pid.c \

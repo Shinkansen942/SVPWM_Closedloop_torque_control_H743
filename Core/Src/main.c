@@ -14,7 +14,6 @@
 #include "fatfs.h"
 #include "fdcan.h"
 #include "i2c.h"
-#include "mdma.h"
 #include "memorymap.h"
 #include "sdmmc.h"
 #include "spi.h"
@@ -214,7 +213,6 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_DMA_Init();
-  MX_MDMA_Init();
   MX_TIM2_Init();
   MX_ADC1_Init();
   MX_FDCAN1_Init();
@@ -239,17 +237,11 @@ int main(void)
   HAL_Delay(100);
 
   //Init SD files
-  volatile HAL_StatusTypeDef res_hal;
-  res_hal = HAL_SD_Init(&hsd1);
-  if (res_hal != HAL_OK)
-  {
-    Error_Handler();
-  }
-  res_hal = HAL_SD_InitCard(&hsd1);
-  if (res_hal != HAL_OK)
-  {
-    Error_Handler();
-  }
+  HAL_SD_Init(&hsd1);
+  HAL_SD_ConfigWideBusOperation(&hsd1, SDMMC_BUS_WIDE_4B);
+  HAL_SD_InitCard(&hsd1);
+  volatile int res_bsp = BSP_SD_IsDetected();
+  HAL_Delay(1);
   // while(1)
   // {
   //   int sdcard_status = HAL_SD_GetCardState(&hsd1);
@@ -403,8 +395,7 @@ void PeriphCommonClock_Config(void)
 
   /** Initializes the peripherals clock
   */
-  PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_ADC|RCC_PERIPHCLK_SDMMC
-                              |RCC_PERIPHCLK_FDCAN;
+  PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_ADC|RCC_PERIPHCLK_FDCAN;
   PeriphClkInitStruct.PLL2.PLL2M = 3;
   PeriphClkInitStruct.PLL2.PLL2N = 300;
   PeriphClkInitStruct.PLL2.PLL2P = 8;
@@ -413,7 +404,6 @@ void PeriphCommonClock_Config(void)
   PeriphClkInitStruct.PLL2.PLL2RGE = RCC_PLL2VCIRANGE_1;
   PeriphClkInitStruct.PLL2.PLL2VCOSEL = RCC_PLL2VCOWIDE;
   PeriphClkInitStruct.PLL2.PLL2FRACN = 0;
-  PeriphClkInitStruct.SdmmcClockSelection = RCC_SDMMCCLKSOURCE_PLL2;
   PeriphClkInitStruct.FdcanClockSelection = RCC_FDCANCLKSOURCE_PLL2;
   PeriphClkInitStruct.AdcClockSelection = RCC_ADCCLKSOURCE_PLL2;
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK)
