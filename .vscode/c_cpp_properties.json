@@ -7,10 +7,7 @@
         "Drivers/CMSIS/Device/ST/STM32H7xx/Include",
         "Drivers/CMSIS/Include",
         "Drivers/STM32H7xx_HAL_Driver/Inc",
-        "Drivers/STM32H7xx_HAL_Driver/Inc/Legacy",
-        "FATFS/App",
-        "FATFS/Target",
-        "Middlewares/Third_Party/FatFs/src"
+        "Drivers/STM32H7xx_HAL_Driver/Inc/Legacy"
       ],
       "defines": [
         "STM32H743xx",

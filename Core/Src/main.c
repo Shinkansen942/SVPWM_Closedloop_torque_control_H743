@@ -5,10 +5,13 @@
   Change ADC to Phy conversion ratio -> use 1~4k array to store data
   SDMMC Log
   SDMMC with FATFS and MDMA
+  OCP OTP Encoder Error
+  RTC
   DONE:
   SDMMC Test with FATFS without MDMA
   ADC DMA
-  Bypass SD Card detetion
+  Bypass SD Card detetion in BSP_PlatformIsDetected
+  Invalidate DCache after ACD finish conversion
 
 */
 /* USER CODE END Header */
@@ -16,11 +19,10 @@
 #include "main.h"
 #include "adc.h"
 #include "dma.h"
-#include "fatfs.h"
 #include "fdcan.h"
 #include "i2c.h"
 #include "memorymap.h"
-#include "sdmmc.h"
+#include "rtc.h"
 #include "spi.h"
 #include "tim.h"
 #include "usart.h"
@@ -70,13 +72,18 @@ static void MPU_Config(void);
 float MCU_MapValue(uint16_t in_value, uint16_t in_min, uint16_t in_max, uint16_t out_min, uint16_t out_max);
 float MCU_TemperatureCalculate(uint16_t ts_data);
 void Enter_ERROR_State(void);
-void config_fdcan1(void);
+void Config_Fdcan1(void);
+void CAN_Send_State(int16_t RPM, int16_t torque, uint16_t DCV, int16_t DCA);
+void CAN_Send_Status(void);
+void CAN_Send_Temp(void);
+void CAN_Send_Heartbeat(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 char data[500];
-
+__attribute__((section("._RAM_Area"))) static char tdata[500];
+extern char write_buffer[200000];
 
 float open_loop_timestamp=0;
 float zero_electric_angle=0;
@@ -89,6 +96,8 @@ int pole_pairs=1;
 int indexLED=0;
 int indexHeartbeat=0;
 int indexStatus=0;
+int indexTimer = 0;
+int indexSD = 0;
 uint16_t raw1,raw2,raw3;
 float motor_target= M_PI/6;
 float Ts=(float)1/10000;
@@ -109,19 +118,25 @@ const float InvCPLSB = 10.0f;
 const float DCVPLSB = 10.0f;
 const float DCAPLSB = 10.0f;
 const float ACAPLSB = 10.0f;
+
 int max_time = 0;
 int min_time = INT16_MAX;
 int prev_time = 0;
 int max_btw = 0;
+int max_sprint = 0;
 
 INV_Statustypedef inverter_state = STATE_INIT;
 __attribute__((section("._ADC1_Area"))) uint16_t ADC1_arr[4] = {0};
 __attribute__((section("._ADC2_Area"))) uint16_t ADC2_arr[4] = {0};
 __attribute__((section("._ADC3_Area"))) uint16_t ADC3_arr[6] = {0};
+// __attribute__((section("._ADC1_Area"))) uint16_t tmp_ADC1_arr[4] = {0};
+// __attribute__((section("._ADC2_Area"))) uint16_t tmp_ADC2_arr[4] = {0};
+// __attribute__((section("._ADC3_Area"))) uint16_t tmp_ADC3_arr[6] = {0};
 // uint16_t ADC1_arr[4] = {0};
 // uint16_t ADC2_arr[4] = {0};
 // uint16_t ADC3_arr[6] = {0};
 
+// CAN Headers
 FDCAN_TxHeaderTypeDef HeartBeatHeader = { .Identifier = CAN_ID_HEARTBEAT+MOT_ID,.IdType = FDCAN_STANDARD_ID,.TxFrameType = FDCAN_DATA_FRAME,
                                           .DataLength = FDCAN_DLC_BYTES_1,.ErrorStateIndicator = FDCAN_ESI_ACTIVE,.BitRateSwitch = FDCAN_BRS_OFF,
                                           .FDFormat = FDCAN_CLASSIC_CAN,.TxEventFifoControl = FDCAN_STORE_TX_EVENTS,.MessageMarker = 0x01};
@@ -134,7 +149,6 @@ FDCAN_TxHeaderTypeDef StateHeader     = { .Identifier = CAN_ID_STATE+MOT_ID,.IdT
 FDCAN_TxHeaderTypeDef StatusHeader    = { .Identifier = CAN_ID_STATUS+MOT_ID,.IdType = FDCAN_STANDARD_ID,.TxFrameType = FDCAN_DATA_FRAME,
                                           .DataLength = FDCAN_DLC_BYTES_4,.ErrorStateIndicator = FDCAN_ESI_ACTIVE,.BitRateSwitch = FDCAN_BRS_OFF,
                                           .FDFormat = FDCAN_CLASSIC_CAN,.TxEventFifoControl = FDCAN_STORE_TX_EVENTS,.MessageMarker = 0x04};
-       
 FDCAN_RxHeaderTypeDef RxHeader1;
 
 int isSent = 1;
@@ -150,12 +164,14 @@ struct PIDController pid_controller = {.P=0.5,.I=0.1,.D=0.0,.output_ramp=100.0,.
 struct PIDController pid_controller_current = {.P=1.0,.I=0.1,.D=0.0,.output_ramp=100.0,.limit=6,.error_prev=0,.output_prev=0,.integral_prev=0};
 
 // SD_HandleTypeDef hsd;
-FIL TestFile;
-static uint8_t buffer[_MAX_SS]; /* a work buffer for the f_mkfs() */
+__attribute__((section("._RAM_Area"))) FIL TestFile;
+__attribute__((section("._RAM_Area"))) FATFS SDFatFS_RAM;
+uint8_t wtext[] = "This is STM32 working with FatFs\n"; /* File write buffer */
+uint32_t byteswritten, bytesread; /* File write/read counts */
+// static uint8_t buffer[_MAX_SS]; /* a work buffer for the f_mkfs() */
 
 void UART_TX_Send(UART_HandleTypeDef *huart,const char *format,...)
 {
-  __attribute__((section("._RAM_Area"))) static char tdata[500];
   va_list list;
   va_start(list,format);  
   vsnprintf(tdata,sizeof(tdata),format,list);
@@ -185,9 +201,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-  volatile FRESULT res = 1000;                                 /* FatFs function common result code */
-	uint32_t byteswritten, bytesread;                     /* File write/read counts */
-	uint8_t wtext[] = "This is STM32 working with FatFs"; /* File write buffer */
+                 
   /* USER CODE END 1 */
 
   /* MPU Configuration--------------------------------------------------------*/
@@ -227,12 +241,11 @@ int main(void)
   MX_USART1_UART_Init();
   MX_ADC3_Init();
   MX_TIM1_Init();
-  MX_FATFS_Init();
   MX_ADC2_Init();
-  MX_SDMMC1_SD_Init();
   MX_I2C2_Init();
   MX_TIM5_Init();
   MX_SPI4_Init();
+  MX_RTC_Init();
   /* USER CODE BEGIN 2 */
   HAL_GPIO_WritePin(LED_G_GPIO_Port,LED_G_Pin,GPIO_PIN_RESET);
   HAL_GPIO_WritePin(LED_T_GPIO_Port,LED_T_Pin,GPIO_PIN_SET);
@@ -244,56 +257,23 @@ int main(void)
   HAL_ADCEx_Calibration_Start(&hadc3,ADC_CALIB_OFFSET_LINEARITY,ADC_SINGLE_ENDED);
   HAL_Delay(100);
 
+  HAL_TIM_Base_Start(&htim5);
+
   //Init SD files
-  HAL_SD_Init(&hsd1);
-  HAL_SD_ConfigWideBusOperation(&hsd1, SDMMC_BUS_WIDE_4B);
-  HAL_SD_InitCard(&hsd1);
-  volatile int res_bsp = BSP_SD_IsDetected();
-  HAL_Delay(1);
-  // while(1)
-  // {
-  //   int sdcard_status = HAL_SD_GetCardState(&hsd1);
-  //   HAL_GPIO_TogglePin(LED_T_GPIO_Port,LED_T_Pin);
-  //   HAL_Delay(100);
-  // }
-  volatile int sdcard_status = HAL_SD_GetCardState(&hsd1);
-  if(sdcard_status == HAL_SD_CARD_TRANSFER)
-  {
-    res = f_mount(&SDFatFS,(TCHAR const*)SDPath,1);
-    // res = f_mount(&SDFatFS,"0",0);
-    if (res != FR_OK)
-    {
-      Error_Handler();
-    }
-    else
-    {
-      res = f_open(&TestFile,"0:/Test.txt",FA_CREATE_ALWAYS | FA_WRITE);
-      if (res != FR_OK)
-      {
-        Error_Handler();
-      }
-      else
-      {
-        f_write(&TestFile,wtext,sizeof(wtext),(void *)&byteswritten);
-        if(f_close(&TestFile)!=FR_OK)
-        {
-          Error_Handler();
-        }
-      }
-    }
-  }
 
   // Init ADC DMA
   HAL_ADC_Start_DMA(&hadc1,(uint32_t*)ADC1_arr,4);
   HAL_ADC_Start_DMA(&hadc2,(uint32_t*)ADC2_arr,4);
   HAL_ADC_Start_DMA(&hadc3,(uint32_t*)ADC3_arr,6);
+  // HAL_MDMA_Start_IT(&hmdma_mdma_channel0_dma1_stream2_tc_0,(uint32_t)tmp_ADC1_arr,(uint32_t)ADC1_arr,8,1);
+  // HAL_MDMA_Start_IT(&hmdma_mdma_channel1_dma1_stream1_tc_0,(uint32_t)tmp_ADC2_arr,(uint32_t)ADC2_arr,8,1);
+  // HAL_MDMA_Start_IT(&hmdma_mdma_channel2_dma1_stream4_tc_0,(uint32_t)tmp_ADC3_arr,(uint32_t)ADC3_arr,12,1);
   // HAL_ADC_Start_IT(&hadc3);
 
   HAL_GPIO_WritePin(Motor_Enable_GPIO_Port, Motor_Enable_Pin, GPIO_PIN_SET);
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
-  HAL_TIM_Base_Start(&htim5);
   calibrateOffsets(current_offset,ADC1_arr);
   HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_RESET);
   if(CAL_ZERO_ANGLE)
@@ -307,20 +287,13 @@ int main(void)
     zero_electric_angle=_electricalAngle(raw_angle,pole_pairs);
     setPhaseVoltage(0,0,_electricalAngle(M_PI*1.5f,pole_pairs),TIM1);
     HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_RESET);
-  }  
+  }
+
   inverter_state = STATE_READY;
-  // TODO condense into single function
-  // sprintf(data, "zero_electric_angle: %i \n", (int) floor(zero_electric_angle/M_PI*180));
-  // if(isSent)
-  // {
-  //   HAL_UART_Transmit_DMA(&huart1,data,sizeof(data));
-  //   isSent = 0;
-  // }
   UART_TX_Send(&huart1,"zero_electric_angle: %i \n",(int) floor(zero_electric_angle/M_PI*180));
-  // TODO 
-  // CDC_Transmit_FS((uint8_t*) data, strlen(data));
   HAL_GPIO_WritePin(LED_G_GPIO_Port,LED_G_Pin,GPIO_PIN_SET);
-  config_fdcan1();
+  Config_Fdcan1();
+  prev_time = 0;
   HAL_TIM_Base_Start_IT(&htim2);
   /* USER CODE END 2 */
 
@@ -357,14 +330,15 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSI|RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+  RCC_OscInitStruct.LSIState = RCC_LSI_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLM = 3;
   RCC_OscInitStruct.PLL.PLLN = 360;
   RCC_OscInitStruct.PLL.PLLP = 2;
-  RCC_OscInitStruct.PLL.PLLQ = 24;
+  RCC_OscInitStruct.PLL.PLLQ = 6;
   RCC_OscInitStruct.PLL.PLLR = 2;
   RCC_OscInitStruct.PLL.PLLRGE = RCC_PLL1VCIRANGE_1;
   RCC_OscInitStruct.PLL.PLLVCOSEL = RCC_PLL1VCOWIDE;
@@ -435,13 +409,13 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   if (htim == &htim2 )
   {
     
-    uint32_t tick_start = __HAL_TIM_GET_COUNTER(&htim5);
-
-    
+    uint32_t sprint_start,sprint_end;
+    uint32_t tick_start = __HAL_TIM_GET_COUNTER(&htim5); 
 
     indexLED++;
     indexHeartbeat++;
     indexStatus++;
+    indexSD++;
     CAN_Timer++;
 
     float angle_now;
@@ -468,8 +442,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     float Id_controller_output=PID_operator(0-filtered_Id,&pid_controller_current);
 
     setPhaseVoltage(_constrain(current_controller_output,-voltage_power_supply/2,voltage_power_supply/2),  _constrain(Id_controller_output,-voltage_power_supply/2,voltage_power_supply/2), _electricalAngle(angle_now, pole_pairs),TIM8);
-//    sprintf(data, "angle_now : %i \t angle_prev : %i \n", (int) floor(angle_now/M_PI*180), (int) floor(angle_prev/M_PI*180));
-//    CDC_Transmit_FS((uint8_t*) data, strlen(data));
+
+    // f_write(&TestFile,wtext,sizeof(wtext),(void *)&byteswritten);
+    // sprintf(data, "angle_now : %i \t angle_prev : %i \n", (int) floor(angle_now/M_PI*180), (int) floor(angle_prev/M_PI*180));
+    // CDC_Transmit_FS((uint8_t*) data, strlen(data));
     // sprintf(data, "angular_vel : %i \n", (int) floor(angular_vel/M_PI*180));
     // sprintf(data, "filtered_vel : %i \n", (int) floor(filtered_vel/M_PI*180)); 
     // sprintf(data, "target_torque : %i \n", (int) floor(target_torque));
@@ -481,36 +457,21 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 //    sprintf(data, "angle_now : %i \n", (int) floor(angle_now*180/M_PI));
 //        CDC_Transmit_FS((uint8_t*) data, strlen(data));
 
-    // FDCAN_ProtocolStatusTypeDef protocolStatus = {};
-    // HAL_FDCAN_GetProtocolStatus(&hfdcan1, &protocolStatus);
-    // if (protocolStatus.BusOff) {
-    //     CLEAR_BIT(hfdcan1.Instance->CCCR, FDCAN_CCCR_INIT);
-    // }
-
-    if (indexLED == 500)
+    if (indexLED == 5000)
     {
     	HAL_GPIO_TogglePin(LED_R_GPIO_Port, LED_R_Pin);
     	HAL_GPIO_TogglePin(LED_T_GPIO_Port, LED_T_Pin);
       UART_TX_Send(&huart1,"ping");
     	indexLED=0;
     }
+
     if (indexHeartbeat == 1000)
     {
-      uint8_t HBData = 0x7f;
-      CAN1_SetMsg(&HeartBeatHeader,&HBData);
-      uint8_t TempData[2];
-      float T_Mot = (float) ADC3_arr[2]*MotCPLSB;
-      TempData[1] = (uint8_t) round(T_Mot/0.5);
-      // volatile float T_MCU = (float)MCU_TemperatureCalculate(ADC3_arr[1]<<4);
-      volatile float T_MCU = (float)MCU_TemperatureCalculate(ADC3_arr[1])-50;
-      float T_U = (float)ADC3_arr[3]*InvCPLSB;
-      float T_V = (float)ADC3_arr[4]*InvCPLSB;
-      float T_W = (float)ADC3_arr[5]*InvCPLSB;
-      float T_Report = fmax(fmax(T_MCU,T_U),fmax(T_V,T_W));
-      TempData[0] = (uint8_t) round(T_Report/0.5);
-      CAN1_SetMsg(&TempHeader,TempData);
+      CAN_Send_Heartbeat();
+      CAN_Send_Temp();
       indexHeartbeat = 0;
     }
+
     if (indexStatus == 100)
     {
       float Ia = sqrt(filtered_Id*filtered_Id+filtered_Iq*filtered_Iq);
@@ -518,39 +479,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
       int16_t report_torque = (int16_t) roundf(Ia*torque_constant/max_torque*1000);
       uint16_t report_DCV = (uint16_t) roundf(ADC3_arr[0]*DCVPLSB*100);
       int16_t report_DCA = (int16_t) roundf(ADC1_arr[3]*DCAPLSB*100);
-      uint8_t StateData[8];
-      StateData[0] = report_RPM;
-      StateData[1] = report_RPM >> 8;
-      StateData[2] = report_torque;
-      StateData[3] = report_torque >> 8;
-      StateData[4] = report_DCV;
-      StateData[5] = report_DCV >> 8;
-      StateData[6] = report_DCA;
-      StateData[7] = report_DCA >> 8;
-      CAN1_SetMsg(&StateHeader,StateData);
-      uint16_t report_status = 0;
-      if(inverter_state == STATE_READY) 
-      {
-        report_status |= REPORT_STATUS_READY;
-      }else if(inverter_state == STATE_RUNNING)
-      {
-        report_status |= REPORT_STATUS_ENABLED;
-      }else if(inverter_state == STATE_ERROR)
-      {
-        report_status |= REPORT_STATUS_FAULT;
-      }
-      if(ADC3_arr[0]*DCVPLSB > 60)
-      {
-        report_status |= REPORT_STATUS_HV;
-      }
-      uint8_t StatusData[4];
-      StatusData[0] = report_status;
-      StatusData[1] = report_status>>8;
-      StatusData[2] = ((int16_t)percent_torque_requested*10);
-      StatusData[3] = ((int16_t)percent_torque_requested*10)>>8;
-      CAN1_SetMsg(&StatusHeader,StatusData);
+      CAN_Send_State(report_RPM,report_torque,report_DCV,report_DCA);
+      CAN_Send_Status();
       indexStatus = 0;
     }
+
     // fault detect
     if(CAN_Timer == 10000 && inverter_state == STATE_RUNNING)
     {
@@ -572,6 +505,20 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
       max_btw = btw_time;
     }
     prev_time = tick_start;
+    if (indexTimer == 100000)
+    {
+      max_time = 0;
+      min_time = INT16_MAX;
+      max_btw = 0;
+      indexTimer= 0;
+      // f_puts()
+    }
+    // int sprint_tim = sprint_end-sprint_start;
+    // if (sprint_tim > max_sprint)
+    // {
+    //   max_sprint = sprint_tim;
+    // }
+    indexTimer++;
   }
 }
 
@@ -636,10 +583,11 @@ void HAL_FDCAN_ErrorStatusCallback(FDCAN_HandleTypeDef *hfdcan, uint32_t ErrorSt
   if(hfdcan->Instance == FDCAN1)
   {
     MX_FDCAN1_Init();
+    Config_Fdcan1();
   }
 }
 
-void config_fdcan1(void)
+void Config_Fdcan1(void)
 {
   FDCAN_FilterTypeDef CAN1RxFilterConfig;
   CAN1RxFilterConfig.IdType = FDCAN_STANDARD_ID;
@@ -689,6 +637,66 @@ float MCU_TemperatureCalculate(uint16_t ts_data)
 //  return (80 * (ts_data - ts_cal1)) / (ts_cal2 - ts_cal1) + 30;
  
   return MCU_MapValue(ts_data, ts_cal1, ts_cal2, TEMPSENSOR_CAL1_TEMP, TEMPSENSOR_CAL2_TEMP);
+}
+
+void CAN_Send_State(int16_t RPM, int16_t torque, uint16_t DCV, int16_t DCA)
+{
+  uint8_t StateData[8];
+  StateData[0] = RPM;
+  StateData[1] = RPM >> 8;
+  StateData[2] = torque;
+  StateData[3] = torque >> 8;
+  StateData[4] = DCV;
+  StateData[5] = DCV >> 8;
+  StateData[6] = DCA;
+  StateData[7] = DCA >> 8;
+  CAN1_SetMsg(&StateHeader,StateData);
+}
+
+void CAN_Send_Status(void)
+{
+  uint16_t report_status = 0;
+  if(inverter_state == STATE_READY) 
+  {
+    report_status |= REPORT_STATUS_READY;
+  }else if(inverter_state == STATE_RUNNING)
+  {
+    report_status |= REPORT_STATUS_ENABLED;
+  }else if(inverter_state == STATE_ERROR)
+  {
+    report_status |= REPORT_STATUS_FAULT;
+  }
+  if(ADC3_arr[0]*DCVPLSB > 60)
+  {
+    report_status |= REPORT_STATUS_HV;
+  }
+  uint8_t StatusData[4];
+  StatusData[0] = report_status;
+  StatusData[1] = report_status>>8;
+  StatusData[2] = ((int16_t)percent_torque_requested*10);
+  StatusData[3] = ((int16_t)percent_torque_requested*10)>>8;
+  CAN1_SetMsg(&StatusHeader,StatusData);
+}
+
+void CAN_Send_Temp(void)
+{
+  uint8_t TempData[2];
+  float T_Mot = (float) ADC3_arr[2]*MotCPLSB;
+  TempData[1] = (uint8_t) round(T_Mot/0.5);
+  // volatile float T_MCU = (float)MCU_TemperatureCalculate(ADC3_arr[1]<<4);
+  float T_MCU = (float)MCU_TemperatureCalculate(ADC3_arr[1]);
+  float T_U = (float)ADC3_arr[3]*InvCPLSB;
+  float T_V = (float)ADC3_arr[4]*InvCPLSB;
+  float T_W = (float)ADC3_arr[5]*InvCPLSB;
+  float T_Report = fmax(fmax(T_MCU,T_U),fmax(T_V,T_W));
+  TempData[0] = (uint8_t) round(T_Report/0.5);
+  CAN1_SetMsg(&TempHeader,TempData);
+}
+
+void CAN_Send_Heartbeat(void)
+{
+  uint8_t HBData = 0x7f;
+  CAN1_SetMsg(&HeartBeatHeader,&HBData);
 }
 
 /* USER CODE END 4 */

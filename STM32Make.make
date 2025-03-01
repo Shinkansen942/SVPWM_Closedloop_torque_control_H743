@@ -89,7 +89,7 @@ Core/Src/main.c \
 Core/Src/memorymap.c \
 Core/Src/motor_control.c \
 Core/Src/pid.c \
-Core/Src/sdmmc.c \
+Core/Src/rtc.c \
 Core/Src/sincos_encoder.c \
 Core/Src/spi.c \
 Core/Src/stm32h7xx_hal_msp.c \
@@ -97,6 +97,7 @@ Core/Src/stm32h7xx_it.c \
 Core/Src/syscalls.c \
 Core/Src/sysmem.c \
 Core/Src/system_stm32h7xx.c \
+Core/Src/test_file.c \
 Core/Src/tim.c \
 Core/Src/usart.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal.c \
@@ -114,31 +115,18 @@ Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_hsem.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_i2c.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_i2c_ex.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_mdma.c \
-Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_mmc.c \
-Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_mmc_ex.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_pwr.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_pwr_ex.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_rcc.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_rcc_ex.c \
-Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_sd.c \
-Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_sd_ex.c \
+Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_rtc.c \
+Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_rtc_ex.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_spi.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_spi_ex.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_tim.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_tim_ex.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_uart.c \
-Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_uart_ex.c \
-Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_ll_delayblock.c \
-Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_ll_sdmmc.c \
-FATFS/App/fatfs.c \
-FATFS/Target/bsp_driver_sd.c \
-FATFS/Target/fatfs_platform.c \
-FATFS/Target/sd_diskio.c \
-Middlewares/Third_Party/FatFs/src/diskio.c \
-Middlewares/Third_Party/FatFs/src/ff.c \
-Middlewares/Third_Party/FatFs/src/ff_gen_drv.c \
-Middlewares/Third_Party/FatFs/src/option/cc950.c \
-Middlewares/Third_Party/FatFs/src/option/syscall.c
+Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_uart_ex.c
 
 
 CXX_SOURCES = \
@@ -237,10 +225,7 @@ C_INCLUDES =  \
 -IDrivers/CMSIS/Device/ST/STM32H7xx/Include \
 -IDrivers/CMSIS/Include \
 -IDrivers/STM32H7xx_HAL_Driver/Inc \
--IDrivers/STM32H7xx_HAL_Driver/Inc/Legacy \
--IFATFS/App \
--IFATFS/Target \
--IMiddlewares/Third_Party/FatFs/src
+-IDrivers/STM32H7xx_HAL_Driver/Inc/Legacy
 
 
 
