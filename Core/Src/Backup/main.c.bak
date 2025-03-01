@@ -87,7 +87,7 @@ char data[500];
 __attribute__((section("._RAM_Area"))) static char tdata[500];
 extern char write_buffer[200000];
 
-__attribute__((section("._RAM_Area"))) FATFS SDFatFS_RAM;  /* File system object for SD card logical drive */
+__attribute__((section("._RAM_Area"))) FATFS SDFatFs_RAM;  /* File system object for SD card logical drive */
 __attribute__((section("._RAM_Area"))) FIL MyFile;     /* File object */
 // char SDPath[4]; /* SD card logical drive path */
 static uint8_t buffer[_MAX_SS]; /* a work buffer for the f_mkfs() */
@@ -269,7 +269,7 @@ int main(void)
   
   volatile int res1 = HAL_SD_GetCardState(&hsd1);
     
-  res = f_mount(&SDFatFS_RAM,(TCHAR const*)SDPath,1);
+  res = f_mount(&SDFatFs_RAM,(TCHAR const*)SDPath,1);
   // res = f_mkfs((TCHAR const*)SDPath, FM_ANY, 0, buffer, sizeof(buffer));
   res = f_open(&MyFile, "STM32.TXT", FA_CREATE_ALWAYS | FA_WRITE);
   res = f_write(&MyFile, wtext, sizeof(wtext), (void *)&byteswritten);
