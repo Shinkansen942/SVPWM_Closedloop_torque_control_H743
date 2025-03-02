@@ -102,11 +102,14 @@ float voltage_power_supply=24;
 int period=2596; // period for the PWM
 int dir=1; // anti clockwise direction is 1 , clockwise is -1
 int pole_pairs=1;
+
+
 int indexLED=0;
 int indexHeartbeat=0;
 int indexStatus=0;
 int indexTimer = 0;
-int indexSD = 0;
+int prevSD = 0;
+
 uint16_t raw1,raw2,raw3;
 float motor_target= M_PI/6;
 float Ts=(float)1/10000;
@@ -167,6 +170,9 @@ uint16_t control;
 int CAN_Timer = 0;
 //const double KV= 2375.0/12.0; //KV number (RPM is 2149 - 2375, when operating voltage is 12V)
 
+const char TestFPath[] = {"Test.txt"};
+const char TextFPath[] = {"Text.txt"};
+
 struct LowPassFilter filter= {.Tf=0.01,.y_prev=0.0f}; //Tf=10ms
 struct LowPassFilter filter_current= {.Tf=0.05,.y_prev=0.0f}; //Tf=50ms
 // limit=voltage_power_supply/2;
@@ -207,7 +213,8 @@ int main(void)
   /* USER CODE BEGIN 1 */
   volatile FRESULT res;                                 /* FatFs function common result code */
 	uint32_t byteswritten, bytesread;                     /* File write/read counts */
-	uint8_t wtext[] = "This is STM32 working with FatFs"; /* File write buffer */
+	uint8_t wtext[] = "This is STM32 working with FatFs\n"; /* File write buffer */
+  // uint8_t wlooptext[] = "This is STM32 working with FatFs in main loop\n"; /* File write buffer */
   /* USER CODE END 1 */
 
   /* MPU Configuration--------------------------------------------------------*/
@@ -290,7 +297,7 @@ int main(void)
     }
     else
     {
-      res = f_open(&MyFile,"0:/Test.txt",FA_CREATE_ALWAYS | FA_WRITE);
+      res = f_open(&MyFile,"Test.txt",FA_CREATE_ALWAYS | FA_WRITE);
       if (res != FR_OK)
       {
         Error_Handler();
@@ -340,16 +347,30 @@ int main(void)
   HAL_GPIO_WritePin(LED_G_GPIO_Port,LED_G_Pin,GPIO_PIN_SET);
   Config_Fdcan1();
   prev_time = 0;
-  HAL_TIM_Base_Start_IT(&htim2);
+  HAL_TIM_Base_Start_IT(&htim2); 
+  f_open(&MyFile,"Text.txt",FA_CREATE_ALWAYS|FA_WRITE);
+  f_close(&MyFile);
+  f_open(&MyFile,"Text.txt",FA_OPEN_APPEND|FA_WRITE);
+  prevSD = __HAL_TIM_GET_COUNTER(&htim5);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+
   while (1)
     {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+    int sd_now = __HAL_TIM_GET_COUNTER(&htim5);
+    if (sd_now - prevSD >= 500000)
+    {
+      f_write(&MyFile,write_buffer,sizeof(write_buffer),(void *)&byteswritten);
+      f_sync(&MyFile);
+      
+      prevSD = sd_now;
+    }
+    
     }
   /* USER CODE END 3 */
 }
@@ -461,7 +482,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     indexLED++;
     indexHeartbeat++;
     indexStatus++;
-    indexSD++;
     CAN_Timer++;
 
     float angle_now;
