@@ -1,0 +1,15 @@
+#ifndef __ADC_CONV_H__
+#define __ADC_CONV_H__
+
+#include "stdint.h"
+
+extern double ThreePhaseConv[4096];
+extern double DCAConv[1024];
+extern int MotTempConv[512];
+extern int InvTempConv[512];
+extern int MCUTempConv[512];
+extern double DCVConv[1024];
+
+void GenerateADCConversionTables(void);
+
+#endif

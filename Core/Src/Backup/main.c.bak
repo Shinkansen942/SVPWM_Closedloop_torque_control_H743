@@ -22,6 +22,7 @@
 #include "fatfs.h"
 #include "fdcan.h"
 #include "i2c.h"
+#include "mdma.h"
 #include "memorymap.h"
 #include "rtc.h"
 #include "sdmmc.h"
@@ -92,6 +93,7 @@ __attribute__((section("._RAM_Area"))) FIL MyFile;     /* File object */
 // char SDPath[4]; /* SD card logical drive path */
 static uint8_t buffer[_MAX_SS]; /* a work buffer for the f_mkfs() */
 
+//FOC variables
 float open_loop_timestamp=0;
 float zero_electric_angle=0;
 float shaft_angle=0;
@@ -117,14 +119,14 @@ float percent_torque_requested = 0.04f;
 uint16_t ADC_VAL[3];
 uint16_t current_offset[3];
 double current_phase[3];
-const int adc_range=4095;
-const double Vref=3.3;    // Voltage
-const double Rsense=0.33; // Ohm
+// const int adc_range=4095;
+// const double Vref=3.3;    // Voltage
+// const double Rsense=0.33; // Ohm
 const float MotCPLSB = 10.0f;
 const float InvCPLSB = 10.0f;
-const float DCVPLSB = 10.0f;
-const float DCAPLSB = 10.0f;
-const float ACAPLSB = 10.0f;
+const float DCVPLSB = 0.02271f;        // DCVPLSB = 451*3.3/adc3_range 
+const float DCAPLSB = 0.0402930f;   // DCAPLSB = 3.3/20e-3/adc1_range 
+const float ACAPLSB = 0.0515718f;   // ACAPLSB = 3.3/15.626e-3/adc1_range
 
 int max_time = 0;
 int min_time = INT16_MAX;
@@ -237,6 +239,7 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_DMA_Init();
+  MX_MDMA_Init();
   MX_TIM2_Init();
   MX_ADC1_Init();
   MX_FDCAN1_Init();
@@ -277,7 +280,7 @@ int main(void)
   volatile int sdcard_status = HAL_SD_GetCardState(&hsd1);
   if(sdcard_status == HAL_SD_CARD_TRANSFER)
   {
-    res = f_mount(&SDFatFS,(TCHAR const*)SDPath,1);
+    res = f_mount(&SDFatFS_RAM,(TCHAR const*)SDPath,1);
     // res = f_mount(&SDFatFS,"0",0);
     if (res != FR_OK)
     {
@@ -293,7 +296,8 @@ int main(void)
       else
       {
         f_write(&MyFile,wtext,sizeof(wtext),(void *)&byteswritten);
-        if(f_close(&MyFile)!=FR_OK)
+        res = f_close(&MyFile);
+        if(res!=FR_OK)
         {
           Error_Handler();
         }
@@ -466,7 +470,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     float target_torque = max_torque*percent_torque_requested;
     float target_Iq = target_torque/torque_constant;
     for (int i=0;i<3;i++){
-       	current_phase[i] =(float)  (ADC1_arr[i]-current_offset[i])/ACAPLSB;
+       	current_phase[i] =(float)  (ADC1_arr[i]-current_offset[i])*ACAPLSB;
         if (current_phase[i] > ACAOCP||current_phase[i] < -ACAOCP)
         {
           Enter_ERROR_State();

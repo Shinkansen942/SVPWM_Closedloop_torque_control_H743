@@ -1,0 +1,14 @@
+#include "adc_conv.h"
+#include "stm32h7xx.h"
+
+double ThreePhaseConv[4096];
+double DCAConv[1024];
+int MotTempConv[512];
+int InvTempConv[512];
+int MCUTempConv[512];
+double DCVConv[1024];
+
+void GenerateADCConversionTables(void)
+{
+        
+}

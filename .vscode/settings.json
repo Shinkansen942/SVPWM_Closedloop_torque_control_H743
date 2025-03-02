@@ -10,6 +10,10 @@
         "sdmmc.h": "c",
         "usart.h": "c",
         "gpio.h": "c",
-        "spi.h": "c"
+        "spi.h": "c",
+        "inverter_state.h": "c",
+        "current_sense.h": "c",
+        "pid.h": "c",
+        "adc_conv.h": "c"
     }
 }
