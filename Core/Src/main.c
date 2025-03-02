@@ -293,7 +293,8 @@ int main(void)
       else
       {
         f_write(&MyFile,wtext,sizeof(wtext),(void *)&byteswritten);
-        if(f_close(&MyFile)!=FR_OK)
+        res = f_close(&MyFile);
+        if(res!=FR_OK)
         {
           Error_Handler();
         }
