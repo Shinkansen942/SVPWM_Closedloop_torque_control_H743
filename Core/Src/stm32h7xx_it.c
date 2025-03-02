@@ -378,19 +378,6 @@ void SDMMC1_IRQHandler(void)
 }
 
 /**
-  * @brief This function handles MDMA global interrupt.
-  */
-void MDMA_IRQHandler(void)
-{
-  /* USER CODE BEGIN MDMA_IRQn 0 */
-
-  /* USER CODE END MDMA_IRQn 0 */
-  /* USER CODE BEGIN MDMA_IRQn 1 */
-
-  /* USER CODE END MDMA_IRQn 1 */
-}
-
-/**
   * @brief This function handles ADC3 global interrupt.
   */
 void ADC3_IRQHandler(void)

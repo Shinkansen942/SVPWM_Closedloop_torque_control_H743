@@ -264,16 +264,42 @@ int main(void)
   HAL_TIM_Base_Start(&htim5);
 
   //Init SD files
-  HAL_SD_Init(&hsd1);
+  BSP_SD_Init();
   HAL_SD_InitCard(&hsd1);
-  
-  volatile int res1 = HAL_SD_GetCardState(&hsd1);
-    
-  res = f_mount(&SDFatFS_RAM,(TCHAR const*)SDPath,1);
-  // res = f_mkfs((TCHAR const*)SDPath, FM_ANY, 0, buffer, sizeof(buffer));
-  res = f_open(&MyFile, "STM32.TXT", FA_CREATE_ALWAYS | FA_WRITE);
-  res = f_write(&MyFile, wtext, sizeof(wtext), (void *)&byteswritten);
-  f_sync(&MyFile);
+  volatile int res_bsp = BSP_SD_IsDetected();
+  HAL_Delay(1);
+  // while(1)
+  // {
+  //   int sdcard_status = HAL_SD_GetCardState(&hsd1);
+  //   HAL_GPIO_TogglePin(LED_T_GPIO_Port,LED_T_Pin);
+  //   HAL_Delay(100);
+  // }
+  volatile int sdcard_status = HAL_SD_GetCardState(&hsd1);
+  if(sdcard_status == HAL_SD_CARD_TRANSFER)
+  {
+    res = f_mount(&SDFatFS,(TCHAR const*)SDPath,1);
+    // res = f_mount(&SDFatFS,"0",0);
+    if (res != FR_OK)
+    {
+      Error_Handler();
+    }
+    else
+    {
+      res = f_open(&MyFile,"0:/Test.txt",FA_CREATE_ALWAYS | FA_WRITE);
+      if (res != FR_OK)
+      {
+        Error_Handler();
+      }
+      else
+      {
+        f_write(&MyFile,wtext,sizeof(wtext),(void *)&byteswritten);
+        if(f_close(&MyFile)!=FR_OK)
+        {
+          Error_Handler();
+        }
+      }
+    }
+  }
 
   // Init ADC DMA
   HAL_ADC_Start_DMA(&hadc1,(uint32_t*)ADC1_arr,4);
