@@ -77,7 +77,7 @@ void calibrateOffsets(uint16_t *offset,uint16_t *dma_adc){
 	// uint16_t cal_current[3];
 	for (int i = 0; i < calibration_rounds; i++) {
 		// read_ADC_voltage(hadc1,cal_current);
-		for (int j=0;j<3;j++){
+		for (int j=0;j<4;j++){
 			offset[j]+=dma_adc[j];
 		}
 		

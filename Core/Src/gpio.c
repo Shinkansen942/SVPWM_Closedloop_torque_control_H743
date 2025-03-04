@@ -91,7 +91,7 @@ void MX_GPIO_Init(void)
 
   /*Configure GPIO pins : GATE_Fault_Pin OC_Fault_Pin */
   GPIO_InitStruct.Pin = GATE_Fault_Pin|OC_Fault_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
