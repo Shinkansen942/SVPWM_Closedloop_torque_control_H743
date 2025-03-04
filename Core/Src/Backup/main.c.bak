@@ -91,7 +91,7 @@ extern char write_buffer[200000];
 __attribute__((section("._RAM_Area"))) FATFS SDFatFS_RAM;  /* File system object for SD card logical drive */
 __attribute__((section("._RAM_Area"))) FIL MyFile;     /* File object */
 // char SDPath[4]; /* SD card logical drive path */
-static uint8_t buffer[_MAX_SS]; /* a work buffer for the f_mkfs() */
+// static uint8_t buffer[_MAX_SS]; /* a work buffer for the f_mkfs() */
 
 //FOC variables
 float open_loop_timestamp=0;
@@ -138,6 +138,8 @@ int min_time = INT16_MAX;
 int prev_time = 0;
 int max_btw = 0;
 int max_sprint = 0;
+int max_sdwrite = 0;
+int sd_td;
 
 INV_Statustypedef inverter_state = STATE_INIT;
 __attribute__((section("._ADC1_Area"))) uint16_t ADC1_arr[4] = {0};
@@ -278,7 +280,7 @@ int main(void)
   //Init SD files
   BSP_SD_Init();
   HAL_SD_InitCard(&hsd1);
-  volatile int res_bsp = BSP_SD_IsDetected();
+  // volatile int res_bsp = BSP_SD_IsDetected();
   HAL_Delay(1);
   // while(1)
   // {
@@ -363,10 +365,15 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
     int sd_now = __HAL_TIM_GET_COUNTER(&htim5);
-    if (sd_now - prevSD >= 500000)
+    if (sd_now - prevSD >= 5000000)
     {
       f_write(&MyFile,write_buffer,sizeof(write_buffer),(void *)&byteswritten);
-      f_sync(&MyFile);
+      // f_sync(&MyFile);
+      sd_td = __HAL_TIM_GET_COUNTER(&htim5) - sd_now;
+      if (max_sdwrite < sd_td)
+      {
+        max_sdwrite = sd_td;
+      }
       
       prevSD = sd_now;
     }
@@ -444,7 +451,8 @@ void PeriphCommonClock_Config(void)
 
   /** Initializes the peripherals clock
   */
-  PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_ADC|RCC_PERIPHCLK_FDCAN;
+  PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_ADC|RCC_PERIPHCLK_SDMMC
+                              |RCC_PERIPHCLK_FDCAN;
   PeriphClkInitStruct.PLL2.PLL2M = 3;
   PeriphClkInitStruct.PLL2.PLL2N = 300;
   PeriphClkInitStruct.PLL2.PLL2P = 8;
@@ -453,6 +461,7 @@ void PeriphCommonClock_Config(void)
   PeriphClkInitStruct.PLL2.PLL2RGE = RCC_PLL2VCIRANGE_1;
   PeriphClkInitStruct.PLL2.PLL2VCOSEL = RCC_PLL2VCOWIDE;
   PeriphClkInitStruct.PLL2.PLL2FRACN = 0;
+  PeriphClkInitStruct.SdmmcClockSelection = RCC_SDMMCCLKSOURCE_PLL2;
   PeriphClkInitStruct.FdcanClockSelection = RCC_FDCANCLKSOURCE_PLL2;
   PeriphClkInitStruct.AdcClockSelection = RCC_ADCCLKSOURCE_PLL2;
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK)
@@ -578,7 +587,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
       max_time = 0;
       min_time = INT16_MAX;
       max_btw = 0;
-      indexTimer= 0;
+      indexTimer = 0;
+      max_sdwrite = 0;
       // f_puts()
     }
     // int sprint_tim = sprint_end-sprint_start;
