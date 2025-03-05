@@ -1,6 +1,8 @@
 #ifndef __CONFIG_H__
 #define __CONFIG_H__
 
+#define DEBUG
+#define CAL_ZERO_ANGLE
 #define MOT_RR
 #define ACAOCP 50
 #define MOS_OTP 1000 //should be 10 times otp temp in deg C

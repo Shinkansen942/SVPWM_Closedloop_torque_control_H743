@@ -118,6 +118,10 @@ void Error_Handler(void);
 #define OC_Fault_EXTI_IRQn EXTI4_IRQn
 #define Motor_Enable_Pin GPIO_PIN_5
 #define Motor_Enable_GPIO_Port GPIOD
+#define LED_TR_Pin GPIO_PIN_0
+#define LED_TR_GPIO_Port GPIOE
+#define LED_TE_Pin GPIO_PIN_1
+#define LED_TE_GPIO_Port GPIOE
 
 /* USER CODE BEGIN Private defines */
 

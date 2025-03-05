@@ -197,6 +197,11 @@ SECTIONS
     . = ALIGN(32);
   } > RAM
 
+  ._RAM_D2_Area :
+  {
+    . = ALIGN(32);
+  } > RAM_D2
+
   /* Remove information from the standard libraries */
   /DISCARD/ :
   {

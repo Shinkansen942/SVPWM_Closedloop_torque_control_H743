@@ -44,6 +44,7 @@
 #include "lowpass_filter.h"
 #include "current_sense.h"
 #include "inverter_state.h"
+#include "logger.h"
 
 /* USER CODE END Includes */
 
@@ -89,12 +90,23 @@ void CAN_Send_Heartbeat(void);
 /* USER CODE BEGIN 0 */
 char data[500];
 __attribute__((section("._RAM_Area"))) static char tdata[500];
-extern char write_buffer[200000];
+// extern char write_buffer[200000];
 
 __attribute__((section("._RAM_Area"))) FATFS SDFatFS_RAM;  /* File system object for SD card logical drive */
 __attribute__((section("._RAM_Area"))) FIL MyFile;     /* File object */
 // char SDPath[4]; /* SD card logical drive path */
 // static uint8_t buffer[_MAX_SS]; /* a work buffer for the f_mkfs() */
+
+//Logging Buffers
+__attribute__((section("._RAM_Area"))) volatile struct LOGGER log_buf[2][7500];
+uint8_t wr_log_buf_num = 0;
+uint16_t wr_log_index = 0;
+__attribute__((section("._RAM_Area"))) uint64_t log_tim = 0;
+// struct LOGGER log_buf[100];
+
+int16_t T_Report=0;
+int16_t T_Mot = 0;
+int16_t T_MCU = 0;
 
 //FOC variables
 float open_loop_timestamp=0;
@@ -231,6 +243,7 @@ int main(void)
 	uint32_t byteswritten, bytesread;                     /* File write/read counts */
 	uint8_t wtext[] = "This is STM32 working with FatFs\n"; /* File write buffer */
   // uint8_t wlooptext[] = "This is STM32 working with FatFs in main loop\n"; /* File write buffer */
+  log_buf[0][0].LGSTATE = 0;
   /* USER CODE END 1 */
 
   /* MPU Configuration--------------------------------------------------------*/
@@ -384,8 +397,11 @@ int main(void)
   UART_TX_Send(&huart1,"zero_electric_angle: %i \n",(int) floor(zero_electric_angle/M_PI*180));
   HAL_GPIO_WritePin(LED_G_GPIO_Port,LED_G_Pin,GPIO_PIN_SET);
   Config_Fdcan1();
-  f_open(&MyFile,"Text.txt",FA_CREATE_ALWAYS|FA_WRITE);
-  f_close(&MyFile);
+  res = f_open(&MyFile,"Text.txt",FA_CREATE_ALWAYS|FA_WRITE);
+  if(res == FR_OK)
+  {
+    f_close(&MyFile);
+  }
   f_open(&MyFile,"Text.txt",FA_OPEN_APPEND|FA_WRITE);
   prev_time = __HAL_TIM_GET_COUNTER(&htim5);
   HAL_GPIO_WritePin(LED_T_GPIO_Port,LED_T_Pin,GPIO_PIN_RESET);
@@ -404,14 +420,14 @@ int main(void)
     volatile int sd_now = __HAL_TIM_GET_COUNTER(&htim2);
     if (sd_now - prevSD >= 1000)
     {
-      f_write(&MyFile,write_buffer,sizeof(write_buffer),(void *)&byteswritten);
+      HAL_GPIO_TogglePin(LED_TR_GPIO_PORT,LED_TR_PIN);
+      res = f_write(&MyFile,log_tim,sizeof(log_tim),(void *)&byteswritten);
       f_sync(&MyFile);
       sd_td = __HAL_TIM_GET_COUNTER(&htim2) - sd_now;
       if (max_sdwrite < sd_td)
       {
         max_sdwrite = sd_td;
-      }
-      
+      }      
       prevSD = sd_now;
     }
     
@@ -533,7 +549,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     indexHeartbeat++;
     indexStatus++;
     CAN_Timer++;
-
+    
     float angle_now;
     Get_Encoder_Angle(ADC2_arr,&angle_now);
     for (size_t i = 0; i < 4; i++)
@@ -609,6 +625,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
       CAN_Send_Status(report_torque,report_RPM);
       indexStatus = 0;
     }
+
+    //Logging
+    
+    log_tim++;
 
     // fault detect
     if(CAN_Timer == 10000 && inverter_state == STATE_RUNNING)
@@ -809,12 +829,12 @@ void CAN_Send_Status(int16_t FB_Torque,int16_t Speed)
 void CAN_Send_Temp(void)
 {
   uint8_t TempData[6];
-  int16_t T_Mot = Mot_Conv[ADC3_arr[2]>>6];
-  int16_t T_MCU = MCU_Conv[ADC3_arr[1]>>6];
+  T_Mot = Mot_Conv[ADC3_arr[2]>>6];
+  T_MCU = MCU_Conv[ADC3_arr[1]>>6];
   int16_t T_U = Inv_Conv[ADC3_arr[3]>>6];
   int16_t T_V = Inv_Conv[ADC3_arr[4]>>6];
   int16_t T_W = Inv_Conv[ADC3_arr[5]>>6];
-  int16_t T_Report = maxint16(T_U,maxint16(T_V,T_W));
+  T_Report = maxint16(T_U,maxint16(T_V,T_W));
   //OTP
   if(maxint16(T_Report,T_MCU) > MOS_OTP)
   {
