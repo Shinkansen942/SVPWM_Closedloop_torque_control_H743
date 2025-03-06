@@ -14,6 +14,8 @@
         "inverter_state.h": "c",
         "current_sense.h": "c",
         "pid.h": "c",
-        "adc_conv.h": "c"
+        "adc_conv.h": "c",
+        "sincos_encoder.h": "c",
+        "logger.h": "c"
     }
 }

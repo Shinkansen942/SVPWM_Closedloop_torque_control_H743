@@ -77,6 +77,7 @@ endif
 C_SOURCES =  \
 Core/Src/adc.c \
 Core/Src/as5048a.c \
+Core/Src/crc.c \
 Core/Src/current_sense.c \
 Core/Src/dma.c \
 Core/Src/fdcan.c \
@@ -106,6 +107,8 @@ Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_adc.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_adc_ex.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_cortex.c \
+Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_crc.c \
+Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_crc_ex.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_dma.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_dma_ex.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_exti.c \

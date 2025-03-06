@@ -197,6 +197,11 @@ SECTIONS
     . = ALIGN(32);
   } > RAM
 
+  ._RAM_Area_Unaligned :
+  {
+
+  } > RAM
+
   ._RAM_D2_Area :
   {
     . = ALIGN(32);

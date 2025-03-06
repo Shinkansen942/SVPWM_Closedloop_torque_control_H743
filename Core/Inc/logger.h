@@ -5,9 +5,6 @@
 
 typedef struct LOGGER
 {
-    uint8_t     LGYEAR;     //Year with only last two       1Byte
-    uint8_t     LGMONTH;    //Month                         1Byte
-    uint8_t     LGDAY;      //Day                           1Byte
     uint8_t     LGHR;       //Hour                          1Byte
     uint8_t     LGMIN;      //Minute                        1Byte
     uint8_t     LGSEC;      //Second                        1Byte
@@ -24,8 +21,8 @@ typedef struct LOGGER
     uint16_t    LGANG;      //100*electrical angle          2Byte
     int16_t     LGTCMD;     //10*Percent torque requested   2Byte
     uint16_t    LGSTATE;    //State as per feedback         2Byte
-};
-
+    uint16_t    LGCRC;      //CRC                           2Byte
+} logger_t;
 
 
 #endif

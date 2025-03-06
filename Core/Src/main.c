@@ -21,6 +21,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "adc.h"
+#include "crc.h"
 #include "dma.h"
 #include "fatfs.h"
 #include "fdcan.h"
@@ -80,7 +81,7 @@ float MCU_TemperatureCalculate(uint16_t ts_data);
 void Enter_ERROR_State(void);
 void Config_Fdcan1(void);
 void CAN_Send_State(uint16_t DCV, int16_t DCA);
-void CAN_Send_Status(int16_t FB_Torque,int16_t Speed);
+void CAN_Send_Status(uint16_t report_status,int16_t FB_Torque,int16_t Speed);
 void CAN_Send_Temp(void);
 void CAN_Send_Heartbeat(void);
 /* USER CODE END PFP */
@@ -97,10 +98,10 @@ __attribute__((section("._RAM_Area"))) FIL MyFile;     /* File object */
 // static uint8_t buffer[_MAX_SS]; /* a work buffer for the f_mkfs() */
 
 //Logging Buffers
-__attribute__((section("._RAM_Area"))) struct LOGGER log_buf[2][7500];
+__attribute__((section("._RAM_Area"))) logger_t log_buf[2][7500];
 uint8_t wr_log_buf_num = 0;
 uint16_t wr_log_index = 0;
-uint64_t log_tim = 0;
+// uint64_t log_tim = 0;
 RTC_DateTypeDef log_date;
 RTC_TimeTypeDef log_time;
 uint8_t last_sec = 0;
@@ -152,6 +153,7 @@ const float DCVPLSB = 0.02271f;     // DCVPLSB = 451*3.3/adc3_range
 const float DCAPLSB = 0.0402930f;   // DCAPLSB = 3.3/20e-3/adc1_range 
 const float ACAPLSB = 0.0515718f;   // ACAPLSB = 3.3/15.626e-3/adc1_range
 
+#ifdef TIMING
 int max_time = 0;
 int min_time = INT32_MAX;
 int prev_time = 0;
@@ -160,6 +162,7 @@ int max_sprint = 0;
 int max_sdwrite = 0;
 int sd_td;
 uint32_t loop_time;
+#endif
 
 INV_Statustypedef inverter_state = STATE_INIT;
 __attribute__((section("._ADC1_Area"))) uint16_t ADC1_arr[4] = {0};
@@ -197,7 +200,7 @@ int CAN_Timer = 0;
 //const double KV= 2375.0/12.0; //KV number (RPM is 2149 - 2375, when operating voltage is 12V)
 
 const char TestFPath[] = {"Test.txt"};
-const char TextFPath[] = {"Text.txt"};
+const char TextFPath[] = {"Text.bin"};
 
 struct LowPassFilter filter= {.Tf=0.01,.y_prev=0.0f};         //Tf=10ms
 struct LowPassFilter filter_current= {.Tf=0.05,.y_prev=0.0f}; //Tf=50ms
@@ -245,7 +248,7 @@ int main(void)
 	uint32_t byteswritten, bytesread;                     /* File write/read counts */
 	uint8_t wtext[] = "This is STM32 working with FatFs\n"; /* File write buffer */
   // uint8_t wlooptext[] = "This is STM32 working with FatFs in main loop\n"; /* File write buffer */
-  log_buf[0][0].LGSTATE = 0;
+  // log_buf[0][0].LGSTATE = 0;
   /* USER CODE END 1 */
 
   /* MPU Configuration--------------------------------------------------------*/
@@ -294,6 +297,7 @@ int main(void)
   MX_SDMMC1_SD_Init();
   MX_FATFS_Init();
   MX_TIM3_Init();
+  MX_CRC_Init();
   /* USER CODE BEGIN 2 */
   HAL_GPIO_WritePin(LED_R_GPIO_Port,LED_R_Pin,GPIO_PIN_RESET);
   HAL_GPIO_WritePin(LED_G_GPIO_Port,LED_G_Pin,GPIO_PIN_SET);
@@ -400,7 +404,6 @@ int main(void)
   //Get DateTime
   HAL_RTC_GetDate(&hrtc,&log_date,RTC_FORMAT_BCD);
   HAL_RTC_GetTime(&hrtc,&log_time,RTC_FORMAT_BCD);
-  last_sec = log_time.Seconds;
 
   res = f_open(&MyFile,TextFPath,FA_CREATE_ALWAYS|FA_WRITE);
   if(res == FR_OK)
@@ -412,7 +415,10 @@ int main(void)
   HAL_GPIO_WritePin(LED_G_GPIO_Port,LED_G_Pin,GPIO_PIN_SET);
   inverter_state = STATE_READY;
 
+  #ifdef TIMING
   prev_time = __HAL_TIM_GET_COUNTER(&htim5);
+  #endif
+
   HAL_GPIO_WritePin(LED_TE_GPIO_Port,LED_TE_Pin,GPIO_PIN_SET);
   HAL_TIM_Base_Start_IT(&htim3); 
   prevSD = __HAL_TIM_GET_COUNTER(&htim2);
@@ -430,14 +436,26 @@ int main(void)
     if (sd_now - prevSD >= 1000)
     {
       HAL_GPIO_WritePin(LED_TR_GPIO_Port,LED_TR_Pin,GPIO_PIN_RESET);
-      res = f_write(&MyFile,"TEST\n",5,(void *)&byteswritten);
+      
+      __disable_irq();
+      uint8_t buf_num_to_sd = wr_log_buf_num;
+      uint16_t index_to_sd = wr_log_index;
+      wr_log_buf_num^=0x1;
+      wr_log_index = 0;
+      __enable_irq();
+
+      res = f_write(&MyFile,log_buf[buf_num_to_sd],index_to_sd*sizeof(logger_t),(void *)&byteswritten);
       f_sync(&MyFile);
+
+      #ifdef TIMING
       sd_td = __HAL_TIM_GET_COUNTER(&htim2) - sd_now;
       if (max_sdwrite < sd_td)
       {
         max_sdwrite = sd_td;
       }      
       prevSD = sd_now;
+      #endif
+
       HAL_GPIO_WritePin(LED_TR_GPIO_Port,LED_TR_Pin,GPIO_PIN_SET);
     }
     
@@ -552,8 +570,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     SCB_InvalidateDCache_by_Addr(ADC2_arr,sizeof(ADC2_arr));
     SCB_InvalidateDCache_by_Addr(ADC3_arr,sizeof(ADC3_arr));
 
-    uint32_t sprint_start,sprint_end;
+    #ifdef TIMING
     uint32_t tick_start = __HAL_TIM_GET_COUNTER(&htim5);     
+    #endif
 
     indexLED++;
     indexHeartbeat++;
@@ -594,20 +613,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
     setPhaseVoltage(_constrain(current_controller_output,-voltage_power_supply/2,voltage_power_supply/2),  _constrain(Id_controller_output,-voltage_power_supply/2,voltage_power_supply/2), _electricalAngle(angle_now, pole_pairs),TIM8);
 
-    // f_write(&TestFile,wtext,sizeof(wtext),(void *)&byteswritten);
-    // sprintf(data, "angle_now : %i \t angle_prev : %i \n", (int) floor(angle_now/M_PI*180), (int) floor(angle_prev/M_PI*180));
-    // CDC_Transmit_FS((uint8_t*) data, strlen(data));
-    // sprintf(data, "angular_vel : %i \n", (int) floor(angular_vel/M_PI*180));
-    // sprintf(data, "filtered_vel : %i \n", (int) floor(filtered_vel/M_PI*180)); 
-    // sprintf(data, "target_torque : %i \n", (int) floor(target_torque));
-    // sprintf(data, "real_torque : %i \n", (int) floor(filtered_Iq*torque_constant));   
-    // CDC_Transmit_FS((uint8_t*) data, strlen(data));
-//    sprintf(data, "open loop control \n");
-//    sprintf(data, "angle: %u \n", read_raw);
-//    CDC_Transmit_FS((uint8_t*) data, strlen(data));
-//    sprintf(data, "angle_now : %i \n", (int) floor(angle_now*180/M_PI));
-//        CDC_Transmit_FS((uint8_t*) data, strlen(data));
-
 
     if (indexLED == 5000)
     {
@@ -617,35 +622,77 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     	indexLED=0;
     }
 
+    uint16_t report_DCV = (uint16_t) roundf((float)ADC3_arr[0]*DCVPLSB*100);
+    int16_t report_DCA = (int16_t) roundf((float)(ADC1_arr[3]-current_offset[3])*DCAPLSB*100);
     if (indexHeartbeat == 1000)
     {
       CAN_Send_Heartbeat();
       CAN_Send_Temp();
-      uint16_t report_DCV = (uint16_t) roundf((float)ADC3_arr[0]*DCVPLSB*100);
-      int16_t report_DCA = (int16_t) roundf((float)(ADC1_arr[3]-current_offset[3])*DCAPLSB*100);
       CAN_Send_State(report_DCV,report_DCA);
       indexHeartbeat = 0;
+    }
+
+    uint16_t report_status = 0;
+    if(inverter_state == STATE_READY) 
+    {
+      report_status |= REPORT_STATUS_READY;
+    }else if(inverter_state == STATE_RUNNING)
+    {
+      report_status |= REPORT_STATUS_ENABLED;
+    }else if(inverter_state == STATE_ERROR)
+    {
+      report_status |= REPORT_STATUS_FAULT;
+    }
+    if(ADC3_arr[0]*DCVPLSB > 60)
+    {
+      report_status |= REPORT_STATUS_HV;
     }
 
     if (indexStatus == 100)
     {
       float Ia = sqrt(filtered_Id*filtered_Id+filtered_Iq*filtered_Iq);
-      int16_t report_RPM = (int16_t) roundf(filtered_vel/2/M_PI*60);
+      int16_t report_RPM = (int16_t) roundf(filtered_vel/2/M_PI*60/4);
       int16_t report_torque = (int16_t) roundf(Ia*torque_constant/max_torque*1000);
-      CAN_Send_Status(report_torque,report_RPM);
+      CAN_Send_Status(report_status,report_torque,report_RPM);
       indexStatus = 0;
     }
 
     //Logging
-    
-    log_tim++;
+    HAL_RTC_GetTime(&hrtc,&log_time,RTC_FORMAT_BCD);
+    if(log_time.Seconds != last_sec)
+    {
+      log_subsec = 0;
+      last_sec = log_time.Seconds;
+    }
+    log_buf[wr_log_buf_num][wr_log_index%7500].LGHR = log_time.Hours;
+    log_buf[wr_log_buf_num][wr_log_index%7500].LGMIN = log_time.Minutes;
+    log_buf[wr_log_buf_num][wr_log_index%7500].LGSEC = log_time.Seconds;
+    log_buf[wr_log_buf_num][wr_log_index%7500].LGSUBSEC = log_subsec;
+    log_buf[wr_log_buf_num][wr_log_index%7500].LGDCV = report_DCV;
+    log_buf[wr_log_buf_num][wr_log_index%7500].LGDCA = report_DCA;
+    log_buf[wr_log_buf_num][wr_log_index%7500].LGIU = (int16_t)roundf(current_phase[1]*100);
+    log_buf[wr_log_buf_num][wr_log_index%7500].LGIV = (int16_t)roundf(current_phase[2]*100);
+    log_buf[wr_log_buf_num][wr_log_index%7500].LGIW = (int16_t)roundf(current_phase[3]*100);
+    log_buf[wr_log_buf_num][wr_log_index%7500].LGTMOS = T_Report;
+    log_buf[wr_log_buf_num][wr_log_index%7500].LGTMOT = T_Mot;
+    log_buf[wr_log_buf_num][wr_log_index%7500].LGSINE = ADC2_arr[0]-ADC2_arr[1];
+    log_buf[wr_log_buf_num][wr_log_index%7500].LGCOS = ADC2_arr[2]-ADC2_arr[3];
+    log_buf[wr_log_buf_num][wr_log_index%7500].LGANG = (uint16_t) roundf(angle_now*100*180/M_PI);
+    log_buf[wr_log_buf_num][wr_log_index%7500].LGTCMD = (int16_t) roundf(percent_torque_requested*10);
+    log_buf[wr_log_buf_num][wr_log_index%7500].LGSTATE = report_status;
+    log_buf[wr_log_buf_num][wr_log_index%7500].LGCRC = HAL_CRC_Calculate(&hcrc,&log_buf[wr_log_buf_num][wr_log_index%7500],((sizeof(logger_t)-2)));
+        
+    log_subsec++;
+    wr_log_index++;
 
-    // fault detect
+    //CAN fault detect
     if(CAN_Timer == 10000 && inverter_state == STATE_RUNNING)
     {
       HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_RESET);
       inverter_state = STATE_READY;
     }
+
+    #ifdef TIMING
     loop_time = __HAL_TIM_GET_COUNTER(&htim5)-tick_start;
     if (loop_time > max_time)
     {
@@ -668,14 +715,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
       max_btw = 0;
       indexTimer = 0;
       max_sdwrite = 0;
-      // f_puts()
     }
-    // int sprint_tim = sprint_end-sprint_start;
-    // if (sprint_tim > max_sprint)
-    // {
-    //   max_sprint = sprint_tim;
-    // }
     indexTimer++;
+    #endif
+
     HAL_GPIO_TogglePin(LED_T_GPIO_Port,LED_T_Pin);
   }
 }
@@ -809,23 +852,8 @@ void CAN_Send_State(uint16_t DCV, int16_t DCA)
   CAN1_SetMsg(&StateHeader,StateData);
 }
 
-void CAN_Send_Status(int16_t FB_Torque,int16_t Speed)
+void CAN_Send_Status(uint16_t report_status ,int16_t FB_Torque, int16_t Speed)
 {
-  uint16_t report_status = 0;
-  if(inverter_state == STATE_READY) 
-  {
-    report_status |= REPORT_STATUS_READY;
-  }else if(inverter_state == STATE_RUNNING)
-  {
-    report_status |= REPORT_STATUS_ENABLED;
-  }else if(inverter_state == STATE_ERROR)
-  {
-    report_status |= REPORT_STATUS_FAULT;
-  }
-  if(ADC3_arr[0]*DCVPLSB > 60)
-  {
-    report_status |= REPORT_STATUS_HV;
-  }
   uint8_t StatusData[6];
   StatusData[0] = report_status;
   StatusData[1] = report_status >> 8;
