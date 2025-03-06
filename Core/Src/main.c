@@ -162,6 +162,7 @@ int max_sprint = 0;
 int max_sdwrite = 0;
 int sd_td;
 uint32_t loop_time;
+int max_sd_buf = 0;
 #endif
 
 INV_Statustypedef inverter_state = STATE_INIT;
@@ -444,6 +445,11 @@ int main(void)
       wr_log_index = 0;
       __enable_irq();
 
+      if(max_sd_buf<index_to_sd)
+      {
+        max_sd_buf = index_to_sd;
+      }
+
       res = f_write(&MyFile,log_buf[buf_num_to_sd],index_to_sd*sizeof(logger_t),(void *)&byteswritten);
       f_sync(&MyFile);
 
@@ -685,12 +691,14 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     log_subsec++;
     wr_log_index++;
 
+    #ifdef CAN_OT_FAULT
     //CAN fault detect
     if(CAN_Timer == 10000 && inverter_state == STATE_RUNNING)
     {
       HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_RESET);
       inverter_state = STATE_READY;
     }
+    #endif
 
     #ifdef TIMING
     loop_time = __HAL_TIM_GET_COUNTER(&htim5)-tick_start;

@@ -4,6 +4,7 @@
 #define DEBUG           //undefine if don't need debug
 #define CAL_ZERO_ANGLE  //undefine if don't need zero electrical angle calibration
 #define TIMING          //undefine if don't need loop timing
+// #define CAN_OT_FAULT    //undefine to disable CAN OVERTIME Falut
 #define MOT_RR
 #define ACAOCP 50
 #define MOS_OTP 1000 //should be 10 times otp temp in deg C
