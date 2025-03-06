@@ -202,8 +202,8 @@ int CAN_Timer = 0;
 const char TestFPath[] = {"Test.txt"};
 const char TextFPath[] = {"Text.bin"};
 
-struct LowPassFilter filter= {.Tf=0.01,.y_prev=0.0f};         //Tf=10ms
-struct LowPassFilter filter_current= {.Tf=0.05,.y_prev=0.0f}; //Tf=50ms
+struct LowPassFilter filter= {.Tf=0.0001,.y_prev=0.0f};         //Tf=0.1ms
+struct LowPassFilter filter_current= {.Tf=0.0005,.y_prev=0.0f}; //Tf=0.5ms
 // limit=voltage_power_supply/2;
 struct PIDController pid_controller = {.P=0.5,.I=0.1,.D=0.0,.output_ramp=100.0,.limit=6,.error_prev=0,.output_prev=0,.integral_prev=0};
 struct PIDController pid_controller_current = {.P=1.0,.I=0.1,.D=0.0,.output_ramp=100.0,.limit=6,.error_prev=0,.output_prev=0,.integral_prev=0};
@@ -680,7 +680,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     log_buf[wr_log_buf_num][wr_log_index%7500].LGANG = (uint16_t) roundf(angle_now*100*180/M_PI);
     log_buf[wr_log_buf_num][wr_log_index%7500].LGTCMD = (int16_t) roundf(percent_torque_requested*10);
     log_buf[wr_log_buf_num][wr_log_index%7500].LGSTATE = report_status;
-    log_buf[wr_log_buf_num][wr_log_index%7500].LGCRC = HAL_CRC_Calculate(&hcrc,&log_buf[wr_log_buf_num][wr_log_index%7500],((sizeof(logger_t)-2)/2));
+    log_buf[wr_log_buf_num][wr_log_index%7500].LGCRC = HAL_CRC_Calculate(&hcrc,&log_buf[wr_log_buf_num][wr_log_index%7500],((sizeof(logger_t)-2)));
         
     log_subsec++;
     wr_log_index++;

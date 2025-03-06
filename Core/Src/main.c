@@ -202,8 +202,8 @@ int CAN_Timer = 0;
 const char TestFPath[] = {"Test.txt"};
 const char TextFPath[] = {"Text.bin"};
 
-struct LowPassFilter filter= {.Tf=0.01,.y_prev=0.0f};         //Tf=10ms
-struct LowPassFilter filter_current= {.Tf=0.05,.y_prev=0.0f}; //Tf=50ms
+struct LowPassFilter filter= {.Tf=0.0001,.y_prev=0.0f};         //Tf=0.1ms
+struct LowPassFilter filter_current= {.Tf=0.0005,.y_prev=0.0f}; //Tf=0.5ms
 // limit=voltage_power_supply/2;
 struct PIDController pid_controller = {.P=0.5,.I=0.1,.D=0.0,.output_ramp=100.0,.limit=6,.error_prev=0,.output_prev=0,.integral_prev=0};
 struct PIDController pid_controller_current = {.P=1.0,.I=0.1,.D=0.0,.output_ramp=100.0,.limit=6,.error_prev=0,.output_prev=0,.integral_prev=0};
