@@ -108,6 +108,11 @@ uint8_t last_sec = 0;
 uint16_t log_subsec = 0;
 // struct LOGGER log_buf[100];
 
+//Moving RMS Buffers
+int16_t RMS_buf[3][10000] = {{0}};
+uint32_t RMS_sum[3] = {0};
+uint16_t indexRMS = 0;
+
 int16_t T_Report=0;
 int16_t T_Mot = 0;
 int16_t T_MCU = 0;
@@ -152,6 +157,8 @@ int16_t MCU_Conv[1024] = {0};
 const float DCVPLSB = 0.02271f;     // DCVPLSB = 451*3.3/adc3_range 
 const float DCAPLSB = 0.0402930f;   // DCAPLSB = 3.3/20e-3/adc1_range 
 const float ACAPLSB = 0.0515718f;   // ACAPLSB = 3.3/15.626e-3/adc1_range
+
+
 
 #ifdef TIMING
 int max_time = 0;
@@ -403,8 +410,8 @@ int main(void)
   Config_Fdcan1();
 
   //Get DateTime
-  HAL_RTC_GetDate(&hrtc,&log_date,RTC_FORMAT_BCD);
-  HAL_RTC_GetTime(&hrtc,&log_time,RTC_FORMAT_BCD);
+  HAL_RTC_GetDate(&hrtc,&log_date,RTC_FORMAT_BIN);
+  HAL_RTC_GetTime(&hrtc,&log_time,RTC_FORMAT_BIN);
 
   res = f_open(&MyFile,TextFPath,FA_CREATE_ALWAYS|FA_WRITE);
   if(res == FR_OK)
@@ -664,7 +671,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     }
 
     //Logging
-    HAL_RTC_GetTime(&hrtc,&log_time,RTC_FORMAT_BCD);
+    int16_t IU_100 = (int16_t)roundf(current_phase[1]*100);
+    int16_t IV_100 = (int16_t)roundf(current_phase[2]*100);
+    int16_t IW_100 = (int16_t)roundf(current_phase[3]*100);
+    HAL_RTC_GetDate(&hrtc,&log_date,RTC_FORMAT_BIN);
+    HAL_RTC_GetTime(&hrtc,&log_time,RTC_FORMAT_BIN);
     if(log_time.Seconds != last_sec)
     {
       log_subsec = 0;
@@ -676,9 +687,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     log_buf[wr_log_buf_num][wr_log_index%7500].LGSUBSEC = log_subsec;
     log_buf[wr_log_buf_num][wr_log_index%7500].LGDCV = report_DCV;
     log_buf[wr_log_buf_num][wr_log_index%7500].LGDCA = report_DCA;
-    log_buf[wr_log_buf_num][wr_log_index%7500].LGIU = (int16_t)roundf(current_phase[1]*100);
-    log_buf[wr_log_buf_num][wr_log_index%7500].LGIV = (int16_t)roundf(current_phase[2]*100);
-    log_buf[wr_log_buf_num][wr_log_index%7500].LGIW = (int16_t)roundf(current_phase[3]*100);
+    log_buf[wr_log_buf_num][wr_log_index%7500].LGIU = IU_100;
+    log_buf[wr_log_buf_num][wr_log_index%7500].LGIV = IV_100;
+    log_buf[wr_log_buf_num][wr_log_index%7500].LGIW = IW_100;
     log_buf[wr_log_buf_num][wr_log_index%7500].LGTMOS = T_Report;
     log_buf[wr_log_buf_num][wr_log_index%7500].LGTMOT = T_Mot;
     log_buf[wr_log_buf_num][wr_log_index%7500].LGSINE = ADC2_arr[0]-ADC2_arr[1];
@@ -690,6 +701,31 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         
     log_subsec++;
     wr_log_index++;
+
+    //Moving RMS for phase currents
+    for (size_t i = 0; i < 3; i++)
+    {
+      RMS_sum[i]-=(RMS_buf[i][indexRMS]*RMS_buf[i][indexRMS]);
+    }    
+    RMS_buf[0][indexRMS] = IU_100;
+    RMS_buf[1][indexRMS] = IV_100;
+    RMS_buf[2][indexRMS] = IW_100;
+    for (size_t i = 0; i < 3; i++)
+    {
+      RMS_sum[i]+=(RMS_buf[i][indexRMS]*RMS_buf[i][indexRMS]);
+    }
+    indexRMS++;
+    if(indexRMS==10000)
+    {
+      indexRMS = 0;
+    }
+    for (size_t i = 0; i < 3; i++)
+    {
+      if(RMS_sum[i]/10000 > MOVRMSOCP)
+      {
+        Enter_ERROR_State();
+      }
+    }
 
     #ifdef CAN_OT_FAULT
     //CAN fault detect
@@ -735,11 +771,11 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_PIN)
 {
   if(GPIO_PIN == GPIO_PIN_3)
   {
-
+    Enter_ERROR_State();
   }
   if(GPIO_PIN == GPIO_PIN_4)
   {
-
+    Enter_ERROR_State();
   }
   if(GPIO_PIN == GPIO_PIN_5)
   {
