@@ -316,7 +316,7 @@ int main(void)
   BSP_SD_Init();
   HAL_SD_InitCard(&hsd1);
 
-  #ifdef DEBUG
+  #ifdef SDDEBUG
   volatile int sdcard_status = HAL_SD_GetCardState(&hsd1);
   if(sdcard_status == HAL_SD_CARD_TRANSFER)
   {
@@ -363,7 +363,7 @@ int main(void)
   HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_RESET);
 
   //Wait for GATE READY Signal
-  #ifndef DEBUG
+  #ifdef WAIT_GATE_READY
   while (HAL_GPIO_ReadPin(GATE_Ready_GPIO_Port,GATE_Ready_Pin) != GPIO_PIN_SET)
   {
     HAL_Delay(1);

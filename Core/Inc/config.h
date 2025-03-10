@@ -2,11 +2,12 @@
 #define __CONFIG_H__
 
 // Code Config Options
-#define DEBUG           //undefine to disable debug
+#define SDDEBUG           //undefine to disable debug
 #define CAL_ZERO_ANGLE  //undefine to disable zero electrical angle calibration
 #define TIMING          //undefine to disable loop timing
 // #define CAN_OT_FAULT    //undefine to disable CAN OVERTIME Falut
 #define RMSOCP          //undefine to disable RMS overcurrent protection
+// #define WAIT_GATE_READY //undefine to not wait for gate ready signal
 
 // Motor number
 #define MOT_RR
