@@ -601,9 +601,18 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
     float Iq_controller_output=PID_operator(target_Iq-filtered_Iq,&pid_controller_current);
     float Id_controller_output=PID_operator(0-filtered_Id,&pid_controller_current);
-    float IqOC_controller_output = PID_operator(SOFTOCP-Ia,&pid_controller_current);
+    float IqOC_controller_output;
+    if(Iq_controller_output > 0)
+    {
+      IqOC_controller_output = _constrain(PID_operator(SOFTOCP-Ia,&pid_controller_current),-Iq_controller_output,0);
+    }
+    else
+    {
+      IqOC_controller_output = _constrain(PID_operator(-SOFTOCP-Ia,&pid_controller_current),0,-Iq_controller_output);
+    }
+    
 
-    setPhaseVoltage(_constrain(Iq_controller_output+_constrain(IqOC_controller_output,-Iq_controller_output,0),-voltage_power_supply/2,voltage_power_supply/2),  _constrain(Id_controller_output,-voltage_power_supply/2,voltage_power_supply/2), _electricalAngle(angle_now, pole_pairs),TIM8);
+    setPhaseVoltage(_constrain(Iq_controller_output+IqOC_controller_output,-voltage_power_supply/2,voltage_power_supply/2),  _constrain(Id_controller_output,-voltage_power_supply/2,voltage_power_supply/2), _electricalAngle(angle_now, pole_pairs),TIM8);
 
 
     if (indexLED == 5000)
