@@ -213,7 +213,7 @@ const char TextFPath[] = {"Text.bin"};
 struct LowPassFilter filter= {.Tf=0.0001,.y_prev=0.0f};         //Tf=0.1ms
 struct LowPassFilter filter_current= {.Tf=0.0005,.y_prev=0.0f}; //Tf=0.5ms
 // limit=voltage_power_supply/2;
-struct PIDController pid_controller = {.P=0.5,.I=0.1,.D=0.0,.output_ramp=100.0,.limit=6,.error_prev=0,.output_prev=0,.integral_prev=0};
+// struct PIDController pid_controller = {.P=0.5,.I=0.1,.D=0.0,.output_ramp=100.0,.limit=6,.error_prev=0,.output_prev=0,.integral_prev=0};
 struct PIDController pid_controller_current = {.P=1.0,.I=0.1,.D=0.0,.output_ramp=100.0,.limit=6,.error_prev=0,.output_prev=0,.integral_prev=0};
 
 int16_t maxint16(int16_t a,int16_t b)
@@ -620,11 +620,13 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     float filtered_Iq=LowPassFilter_operator(Iq,&filter_current);
     float Id=cal_Id(current_phase, _electricalAngle(angle_now,pole_pairs));
     float filtered_Id=LowPassFilter_operator(Id,&filter_current);
+    float Ia = sqrt(filtered_Id*filtered_Id+filtered_Iq*filtered_Iq);
 
-    float current_controller_output=PID_operator(target_Iq-filtered_Iq,&pid_controller_current);
+    float Iq_controller_output=PID_operator(target_Iq-filtered_Iq,&pid_controller_current);
     float Id_controller_output=PID_operator(0-filtered_Id,&pid_controller_current);
+    float IqOC_controller_output = PID_operator(SOFTOCP-Ia,&pid_controller_current);
 
-    setPhaseVoltage(_constrain(current_controller_output,-voltage_power_supply/2,voltage_power_supply/2),  _constrain(Id_controller_output,-voltage_power_supply/2,voltage_power_supply/2), _electricalAngle(angle_now, pole_pairs),TIM8);
+    setPhaseVoltage(_constrain(Iq_controller_output+_constrain(IqOC_controller_output,-Iq_controller_output,0),-voltage_power_supply/2,voltage_power_supply/2),  _constrain(Id_controller_output,-voltage_power_supply/2,voltage_power_supply/2), _electricalAngle(angle_now, pole_pairs),TIM8);
 
 
     if (indexLED == 5000)
@@ -663,7 +665,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
     if (indexStatus == 100)
     {
-      float Ia = sqrt(filtered_Id*filtered_Id+filtered_Iq*filtered_Iq);
       int16_t report_RPM = (int16_t) roundf(filtered_vel/2/M_PI*60/4);
       int16_t report_torque = (int16_t) roundf(Ia*torque_constant/max_torque*1000);
       CAN_Send_Status(report_status,report_torque,report_RPM);
@@ -702,6 +703,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     log_subsec++;
     wr_log_index++;
 
+
+    #ifdef RMSOCP
     //Moving RMS for phase currents
     for (size_t i = 0; i < 3; i++)
     {
@@ -726,6 +729,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         Enter_ERROR_State();
       }
     }
+    #endif
 
     #ifdef CAN_OT_FAULT
     //CAN fault detect

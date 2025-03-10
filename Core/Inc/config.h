@@ -1,11 +1,18 @@
 #ifndef __CONFIG_H__
 #define __CONFIG_H__
 
-#define DEBUG           //undefine if don't need debug
-#define CAL_ZERO_ANGLE  //undefine if don't need zero electrical angle calibration
-#define TIMING          //undefine if don't need loop timing
+// Code Config Options
+#define DEBUG           //undefine to disable debug
+#define CAL_ZERO_ANGLE  //undefine to disable zero electrical angle calibration
+#define TIMING          //undefine to disable loop timing
 // #define CAN_OT_FAULT    //undefine to disable CAN OVERTIME Falut
+#define RMSOCP          //undefine to disable RMS overcurrent protection
+
+// Motor number
 #define MOT_RR
+
+// Protections
+#define SOFTOCP 40
 #define ACAOCP 50
 #define MOVRMSOCP 25000000 //should be 10000*OCP^2
 #define MOS_OTP 1000 //should be 10 times otp temp in deg C
