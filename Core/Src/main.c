@@ -192,7 +192,9 @@ const char TextFPath[] = {"Text.bin"};
 struct LowPassFilter filter= {.Tf=0.0001,.y_prev=0.0f};         //Tf=0.1ms
 struct LowPassFilter filter_current_Iq= {.Tf=0.0005,.y_prev=0.0f}; //Tf=0.5ms
 struct LowPassFilter filter_current_Id= {.Tf=0.0005,.y_prev=0.0f}; //Tf=0.5ms
-struct PIDController pid_controller_current = {.P=1.0,.I=0.1,.D=0.0,.output_ramp=100.0,.limit=6,.error_prev=0,.output_prev=0,.integral_prev=0};
+struct PIDController pid_controller_current_Iq = {.P=1.0,.I=0.1,.D=0.0,.output_ramp=100.0,.limit=6,.error_prev=0,.output_prev=0,.integral_prev=0};
+struct PIDController pid_controller_current_Id = {.P=1.0,.I=0.1,.D=0.0,.output_ramp=100.0,.limit=6,.error_prev=0,.output_prev=0,.integral_prev=0};
+struct PIDController pid_controller_current_OCP = {.P=1.0,.I=0.1,.D=0.0,.output_ramp=100.0,.limit=6,.error_prev=0,.output_prev=0,.integral_prev=0};
 
 int16_t maxint16(int16_t a,int16_t b)
 {
@@ -600,16 +602,16 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     float filtered_Id=LowPassFilter_operator(Id,&filter_current_Id);
     float Ia = sqrt(filtered_Id*filtered_Id+filtered_Iq*filtered_Iq);
 
-    float Iq_controller_output=PID_operator(target_Iq-filtered_Iq,&pid_controller_current);
-    float Id_controller_output=PID_operator(0-filtered_Id,&pid_controller_current);
+    float Iq_controller_output=PID_operator(target_Iq-filtered_Iq,&pid_controller_current_Iq);
+    float Id_controller_output=PID_operator(0-filtered_Id,&pid_controller_current_Id);
     float IqOC_controller_output;
     if(Iq_controller_output > 0)
     {
-      IqOC_controller_output = _constrain(PID_operator(SOFTOCP-Ia,&pid_controller_current),-Iq_controller_output,0);
+      IqOC_controller_output = _constrain(PID_operator(SOFTOCP-Ia,&pid_controller_current_OCP),-Iq_controller_output,0);
     }
     else
     {
-      IqOC_controller_output = _constrain(PID_operator(-SOFTOCP-Ia,&pid_controller_current),0,-Iq_controller_output);
+      IqOC_controller_output = _constrain(PID_operator(-SOFTOCP-Ia,&pid_controller_current_OCP),0,-Iq_controller_output);
     }
     
 
