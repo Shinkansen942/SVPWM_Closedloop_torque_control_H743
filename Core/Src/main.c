@@ -138,7 +138,7 @@ float Ts=(float)1/10000;
 float angle_prev=-1.0f;
 const float torque_constant = 0.492f; //Nm/A
 const float max_torque = 25;
-float percent_torque_requested = 1.0f;
+float percent_torque_requested = 0.04f;
 uint16_t ADC_VAL[3];
 uint16_t current_offset[4];
 double current_phase[3];
@@ -192,12 +192,13 @@ int CAN_Timer = 0;
 const char TestFPath[] = {"Test.txt"};
 const char TextFPath[] = {"Text.bin"};
 
-struct LowPassFilter filter= {.Tf=0.0001,.y_prev=0.0f};         //Tf=0.1ms
-struct LowPassFilter filter_current_Iq= {.Tf=0.0005,.y_prev=0.0f}; //Tf=0.5ms
-struct LowPassFilter filter_current_Id= {.Tf=0.0005,.y_prev=0.0f}; //Tf=0.5ms
-struct PIDController pid_controller_current_Iq = {.P=1.0,.I=0.1,.D=0.0,.output_ramp=100.0,.limit=6,.error_prev=0,.output_prev=0,.integral_prev=0};
-struct PIDController pid_controller_current_Id = {.P=1.0,.I=0.1,.D=0.0,.output_ramp=100.0,.limit=6,.error_prev=0,.output_prev=0,.integral_prev=0};
-struct PIDController pid_controller_current_OCP = {.P=1.0,.I=0.1,.D=0.0,.output_ramp=100.0,.limit=6,.error_prev=0,.output_prev=0,.integral_prev=0};
+lpf_t filter= {.Tf=0.0001,.y_prev=0.0f};         //Tf=0.1ms
+lpf_t filter_current_Iq= {.Tf=0.0005,.y_prev=0.0f}; //Tf=0.5ms
+lpf_t filter_current_Id= {.Tf=0.0005,.y_prev=0.0f}; //Tf=0.5ms
+lpf_t filter_current_Iabc[3] = {{.Tf = 0.002,.y_prev=0.0f},{.Tf = 0.002,.y_prev=0.0f},{.Tf = 0.002,.y_prev=0.0f}}; //Tf=2ms
+pid_t pid_controller_current_Iq = {.P=1.0,.I=0.1,.D=0.0,.output_ramp=100.0,.limit=6,.error_prev=0,.output_prev=0,.integral_prev=0};
+pid_t pid_controller_current_Id = {.P=1.0,.I=0.1,.D=0.0,.output_ramp=100.0,.limit=6,.error_prev=0,.output_prev=0,.integral_prev=0};
+pid_t pid_controller_current_OCP = {.P=1.0,.I=0.1,.D=0.0,.output_ramp=100.0,.limit=6,.error_prev=0,.output_prev=0,.integral_prev=0};
 
 int16_t maxint16(int16_t a,int16_t b)
 {
@@ -222,16 +223,6 @@ void CAN1_SetMsg(FDCAN_TxHeaderTypeDef *pTxHeader, const uint8_t *pTxData)
     HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan1, pTxHeader, pTxData);
     /* 启动FDCAN模块 */
     HAL_FDCAN_Start(&hfdcan1);
-    /* 发送缓冲区消息 */
-    // HAL_FDCAN_EnableTxBufferRequest(&hfdcan1, can_txbuf_num);
-    // if(can_txbuf_num == FDCAN_TX_BUFFER31)
-    // {
-    //   can_txbuf_num = FDCAN_TX_BUFFER0;
-    // }
-    // else
-    // {
-    //   can_txbuf_num = can_txbuf_num << 1;
-    // }
 }
 /* USER CODE END 0 */
 
@@ -431,12 +422,12 @@ int main(void)
   /* USER CODE BEGIN WHILE */
 
   while (1)
-    {
+  {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
     volatile int sd_now = __HAL_TIM_GET_COUNTER(&htim2);
-    uint32_t whileTest = sd_now;
+    // uint32_t whileTest = sd_now;
     if (sd_now - prevSD >= 1000)
     {
       HAL_GPIO_WritePin(LED_D11_GPIO_Port,LED_D11_Pin,GPIO_PIN_RESET);
@@ -467,13 +458,8 @@ int main(void)
 
       HAL_GPIO_WritePin(LED_D11_GPIO_Port,LED_D11_Pin,GPIO_PIN_SET);
     }
-
-    if(whileTest - prevWhileTest >= 100)  
-    {
-      CAN_Send_Heartbeat();
-    }
     
-    }
+  }
   /* USER CODE END 3 */
 }
 
@@ -624,10 +610,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     float filtered_vel=LowPassFilter_operator(angular_vel,&filter);
     float target_torque = max_torque*percent_torque_requested;
     float target_Iq = target_torque/torque_constant;
+    float filtered_Iabc[3] = {0.0f};
     for (int i=0;i<3;i++){
        	current_phase[i] =(float)  (ADC1_arr[i]-current_offset[i])*ACAPLSB;
         //OCP
-        if (current_phase[i] > ACAOCP||current_phase[i] < -ACAOCP)
+        filtered_Iabc[i] = LowPassFilter_operator(current_phase[i],&filter_current_Iabc[i]);
+        if (filtered_Iabc[i] > ACAOCP||current_phase[i] < -ACAOCP)
         {
           Enter_ERROR_State();
         }
@@ -683,9 +671,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     int16_t report_DCA = (int16_t) roundf((float)(ADC1_arr[3]-current_offset[3])*DCAPLSB*100);
     if (indexHeartbeat == 1000)
     {
-      CAN_Send_Heartbeat();
       CAN_Send_Temp();
       CAN_Send_State(report_DCV,report_DCA);
+      CAN_Send_Heartbeat();
+      // CAN_Send_Heartbeat();
       indexHeartbeat = 0;
     }
 
