@@ -124,8 +124,7 @@ void Error_Handler(void);
 #define LED_D13_GPIO_Port GPIOD
 #define BUT_G2_Pin GPIO_PIN_2
 #define BUT_G2_GPIO_Port GPIOG
-#define BUT_G3_Pin GPIO_PIN_3
-#define BUT_G3_GPIO_Port GPIOG
+#define BUT_G2_EXTI_IRQn EXTI2_IRQn
 #define LV_Fault_Pin GPIO_PIN_5
 #define LV_Fault_GPIO_Port GPIOG
 #define LV_Fault_EXTI_IRQn EXTI9_5_IRQn
@@ -139,6 +138,8 @@ void Error_Handler(void);
 #define OC_Fault_EXTI_IRQn EXTI4_IRQn
 #define Motor_Enable_Pin GPIO_PIN_5
 #define Motor_Enable_GPIO_Port GPIOD
+#define Motor_Enable_Override_Pin GPIO_PIN_6
+#define Motor_Enable_Override_GPIO_Port GPIOD
 
 /* USER CODE BEGIN Private defines */
 

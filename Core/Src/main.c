@@ -132,6 +132,7 @@ int indexHeartbeat=0;
 int indexStatus=0;
 int indexTimer = 0;
 int prevSD = 0;
+int prevWhileTest = 0;
 
 float Ts=(float)1/10000;
 float angle_prev=-1.0f;
@@ -182,6 +183,7 @@ FDCAN_TxHeaderTypeDef StatusHeader    = { .Identifier = CAN_ID_STATUS+MOT_ID,.Id
                                           .DataLength = FDCAN_DLC_BYTES_6,.ErrorStateIndicator = FDCAN_ESI_ACTIVE,.BitRateSwitch = FDCAN_BRS_OFF,
                                           .FDFormat = FDCAN_CLASSIC_CAN,.TxEventFifoControl = FDCAN_STORE_TX_EVENTS,.MessageMarker = 0x04};
 FDCAN_RxHeaderTypeDef RxHeader1;
+// uint32_t can_txbuf_num = 0x1u;
 
 int isSent = 1;
 uint16_t control;
@@ -217,11 +219,19 @@ void UART_TX_Send(UART_HandleTypeDef *huart,const char *format,...)
 
 void CAN1_SetMsg(FDCAN_TxHeaderTypeDef *pTxHeader, const uint8_t *pTxData)
 {
-    HAL_FDCAN_AddMessageToTxBuffer(&hfdcan1, pTxHeader, pTxData, FDCAN_TX_BUFFER0);
+    HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan1, pTxHeader, pTxData);
     /* 启动FDCAN模块 */
     HAL_FDCAN_Start(&hfdcan1);
     /* 发送缓冲区消息 */
-    HAL_FDCAN_EnableTxBufferRequest(&hfdcan1, FDCAN_TX_BUFFER0);
+    // HAL_FDCAN_EnableTxBufferRequest(&hfdcan1, can_txbuf_num);
+    // if(can_txbuf_num == FDCAN_TX_BUFFER31)
+    // {
+    //   can_txbuf_num = FDCAN_TX_BUFFER0;
+    // }
+    // else
+    // {
+    //   can_txbuf_num = can_txbuf_num << 1;
+    // }
 }
 /* USER CODE END 0 */
 
@@ -366,6 +376,7 @@ int main(void)
   HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_1);
   HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_2);
   HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_3);
+  HAL_Delay(1000);
   calibrateOffsets(current_offset,ADC1_arr);
   HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_RESET);
 
@@ -425,6 +436,7 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
     volatile int sd_now = __HAL_TIM_GET_COUNTER(&htim2);
+    uint32_t whileTest = sd_now;
     if (sd_now - prevSD >= 1000)
     {
       HAL_GPIO_WritePin(LED_D11_GPIO_Port,LED_D11_Pin,GPIO_PIN_RESET);
@@ -454,6 +466,11 @@ int main(void)
       #endif
 
       HAL_GPIO_WritePin(LED_D11_GPIO_Port,LED_D11_Pin,GPIO_PIN_SET);
+    }
+
+    if(whileTest - prevWhileTest >= 100)  
+    {
+      CAN_Send_Heartbeat();
     }
     
     }
@@ -490,7 +507,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLM = 3;
   RCC_OscInitStruct.PLL.PLLN = 180;
   RCC_OscInitStruct.PLL.PLLP = 2;
-  RCC_OscInitStruct.PLL.PLLQ = 6;
+  RCC_OscInitStruct.PLL.PLLQ = 32;
   RCC_OscInitStruct.PLL.PLLR = 2;
   RCC_OscInitStruct.PLL.PLLRGE = RCC_PLL1VCIRANGE_2;
   RCC_OscInitStruct.PLL.PLLVCOSEL = RCC_PLL1VCOWIDE;
@@ -529,8 +546,7 @@ void PeriphCommonClock_Config(void)
 
   /** Initializes the peripherals clock
   */
-  PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_ADC|RCC_PERIPHCLK_SDMMC
-                              |RCC_PERIPHCLK_FDCAN;
+  PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_ADC|RCC_PERIPHCLK_SDMMC;
   PeriphClkInitStruct.PLL2.PLL2M = 3;
   PeriphClkInitStruct.PLL2.PLL2N = 150;
   PeriphClkInitStruct.PLL2.PLL2P = 8;
@@ -540,7 +556,6 @@ void PeriphCommonClock_Config(void)
   PeriphClkInitStruct.PLL2.PLL2VCOSEL = RCC_PLL2VCOWIDE;
   PeriphClkInitStruct.PLL2.PLL2FRACN = 0;
   PeriphClkInitStruct.SdmmcClockSelection = RCC_SDMMCCLKSOURCE_PLL2;
-  PeriphClkInitStruct.FdcanClockSelection = RCC_FDCANCLKSOURCE_PLL2;
   PeriphClkInitStruct.AdcClockSelection = RCC_ADCCLKSOURCE_PLL2;
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK)
   {
@@ -643,9 +658,24 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
     if (indexLED == 5000)
     {
-    	HAL_GPIO_TogglePin(LED_D10_GPIO_Port, LED_D10_Pin);
+    	if(inverter_state == STATE_READY)
+      {
+        HAL_GPIO_TogglePin(LED_D10_GPIO_Port, LED_D10_Pin);
+        HAL_GPIO_WritePin(LED_D13_GPIO_Port,LED_D13_Pin,GPIO_PIN_RESET);
+      }
+      else if(inverter_state == STATE_RUNNING)
+      {
+        HAL_GPIO_WritePin(LED_D10_GPIO_Port,LED_D10_Pin,GPIO_PIN_SET);
+        HAL_GPIO_WritePin(LED_D13_GPIO_Port,LED_D13_Pin,GPIO_PIN_RESET);
+      }
+      else if(inverter_state == STATE_ERROR)
+      {
+        HAL_GPIO_WritePin(LED_D10_GPIO_Port,LED_D10_Pin,GPIO_PIN_RESET);
+        HAL_GPIO_TogglePin(LED_D13_GPIO_Port,LED_D13_Pin);
+      }
+      
     	// HAL_GPIO_TogglePin(LED_D13_GPIO_Port, LED_D13_Pin);
-      UART_TX_Send(&huart1,"ping");
+      // UART_TX_Send(&huart1,"ping");
     	indexLED=0;
     }
 
@@ -813,6 +843,7 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
 {
   if((RxFifo0ITs & FDCAN_IT_RX_FIFO0_NEW_MESSAGE)!=0)
   {
+    HAL_GPIO_TogglePin(LED_B13_GPIO_Port,LED_B13_Pin);
     uint8_t RxData1[4];
     HAL_FDCAN_GetRxMessage(hfdcan,FDCAN_RX_FIFO0,&RxHeader1,RxData1);
     if(hfdcan->Instance == FDCAN1)
@@ -848,6 +879,7 @@ void HAL_FDCAN_ErrorStatusCallback(FDCAN_HandleTypeDef *hfdcan, uint32_t ErrorSt
 {
   if(hfdcan->Instance == FDCAN1)
   {
+    HAL_GPIO_TogglePin(LED_B12_GPIO_Port,LED_B12_Pin);
     MX_FDCAN1_Init();
     Config_Fdcan1();
   }
@@ -867,7 +899,7 @@ void Config_Fdcan1(void)
   {
     Error_Handler();
   }
-  if (HAL_FDCAN_ConfigGlobalFilter(&hfdcan1,FDCAN_REJECT,FDCAN_REJECT,ENABLE,ENABLE) != HAL_OK)
+  if (HAL_FDCAN_ConfigGlobalFilter(&hfdcan1,FDCAN_REJECT,FDCAN_REJECT,FDCAN_FILTER_REMOTE,FDCAN_FILTER_REMOTE) != HAL_OK)
   {
     Error_Handler();
   }

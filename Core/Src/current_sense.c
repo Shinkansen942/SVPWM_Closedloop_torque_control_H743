@@ -71,21 +71,22 @@ void read_ADC_voltage(ADC_HandleTypeDef hadc1,uint16_t *ADC_VAL){
 }
 void calibrateOffsets(uint16_t *offset,uint16_t *dma_adc){
 	const int calibration_rounds = 1000;
+	uint32_t temp_offset[4] = {0};
 
 	// 查找0电流时候的电压
 
 	// uint16_t cal_current[3];
 	for (int i = 0; i < calibration_rounds; i++) {
 		// read_ADC_voltage(hadc1,cal_current);
+		SCB_InvalidateDCache_by_Addr(dma_adc,32);
 		for (int j=0;j<4;j++){
-			offset[j]+=dma_adc[j];
-		}
-		
-		HAL_Delay(1);
+			temp_offset[j]+=dma_adc[j];
+		}		
+		HAL_Delay(5);
 	}
-	for (int i = 0; i < 3; i++)
+	for (int i = 0; i < 4; i++)
 	{
-		offset[i]/=calibration_rounds;
+		offset[i] = temp_offset[i]/calibration_rounds;
 	}
 	
 }

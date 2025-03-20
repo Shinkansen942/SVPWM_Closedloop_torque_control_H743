@@ -8,6 +8,7 @@
 // #define CAN_OT_FAULT    //undefine to disable CAN OVERTIME Falut
 #define RMSOCP          //undefine to disable RMS overcurrent protection
 // #define WAIT_GATE_READY //undefine to not wait for gate ready signal
+#define OVERRIDE_OCP    //define to enable hardware ocp override
 
 // Motor number
 #define MOT_RR
