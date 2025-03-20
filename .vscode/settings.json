@@ -16,6 +16,10 @@
         "pid.h": "c",
         "adc_conv.h": "c",
         "sincos_encoder.h": "c",
-        "logger.h": "c"
+        "logger.h": "c",
+        "stm32h7xx_hal.h": "c",
+        "stm32h7xx_hal_conf.h": "c",
+        "stm32h7xx_hal_tim_ex.h": "c",
+        "stm32h7xx_hal_def.h": "c"
     }
 }

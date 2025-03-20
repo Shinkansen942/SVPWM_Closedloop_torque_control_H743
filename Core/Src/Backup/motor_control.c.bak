@@ -97,7 +97,6 @@ void setPhaseVoltage(float Uq,float Ud, float angle_el, TIM_TypeDef * TIM_BASE) 
   angle_el =  _normalizeAngle (angle_el+M_PI/2);
   // int sector = floor(angle_el / M_PI*3) + 1;
   // calculate the duty cycles
-  // #TODO change SPACE VECTOR to MIDPOINT CLAMP for faster execution with Uq Ud
   float sa;
   float ca;
   _sincos(angle_el,&sa,&ca);

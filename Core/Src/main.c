@@ -46,7 +46,7 @@
 #include "current_sense.h"
 #include "inverter_state.h"
 #include "logger.h"
-
+// #include "stm32h7xx_hal_tim_ex.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -111,6 +111,9 @@ uint16_t indexRMS = 0;
 int16_t T_Report=0;
 int16_t T_Mot = 0;
 int16_t T_MCU = 0;
+int16_t T_U;
+int16_t T_V;
+int16_t T_W;
 
 //FOC variables
 float open_loop_timestamp=0;
@@ -121,7 +124,8 @@ float voltage_power_supply=24;
 int period=2596; // period for the PWM
 int dir=1; // anti clockwise direction is 1 , clockwise is -1
 int pole_pairs=1;
-
+float angle_now;
+const float ACAPLSB = 0.0515718f;   // ACAPLSB = 3.3/15.626e-3/adc1_range
 
 int indexLED=0;
 int indexHeartbeat=0;
@@ -133,7 +137,7 @@ float Ts=(float)1/10000;
 float angle_prev=-1.0f;
 const float torque_constant = 0.492f; //Nm/A
 const float max_torque = 25;
-float percent_torque_requested = 0.04f;
+float percent_torque_requested = 1.0f;
 uint16_t ADC_VAL[3];
 uint16_t current_offset[4];
 double current_phase[3];
@@ -142,9 +146,6 @@ const int16_t Inv_Conv[1024] = {-750,-696,-608,-553,-512,-479,-452,-428,-407,-38
 int16_t MCU_Conv[1024] = {0};
 const float DCVPLSB = 0.02271f;     // DCVPLSB = 451*3.3/adc3_range 
 const float DCAPLSB = 0.0402930f;   // DCAPLSB = 3.3/20e-3/adc1_range 
-const float ACAPLSB = 0.0515718f;   // ACAPLSB = 3.3/15.626e-3/adc1_range
-
-
 
 #ifdef TIMING
 int max_time = 0;
@@ -287,10 +288,10 @@ int main(void)
   MX_TIM3_Init();
   MX_CRC_Init();
   /* USER CODE BEGIN 2 */
-  HAL_GPIO_WritePin(LED_R_GPIO_Port,LED_R_Pin,GPIO_PIN_RESET);
-  HAL_GPIO_WritePin(LED_G_GPIO_Port,LED_G_Pin,GPIO_PIN_SET);
-  HAL_GPIO_WritePin(LED_TE_GPIO_Port,LED_TE_Pin,GPIO_PIN_RESET);
-  HAL_GPIO_WritePin(LED_TR_GPIO_Port,LED_TR_Pin,GPIO_PIN_SET);
+  HAL_GPIO_WritePin(LED_D13_GPIO_Port,LED_D13_Pin,GPIO_PIN_SET);
+  // HAL_GPIO_WritePin(LED_D12_GPIO_Port,LED_D12_Pin,GPIO_PIN_SET);
+  HAL_GPIO_WritePin(LED_D11_GPIO_Port,LED_D11_Pin,GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(LED_D10_GPIO_Port,LED_D10_Pin,GPIO_PIN_RESET);
 
   //Get temperature sensor calibration data
   /* 0x1FF1E820 Calibration ADC value at 30 °C = 0x2fc0, 12224 */
@@ -362,6 +363,9 @@ int main(void)
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
+  HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_1);
+  HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_2);
+  HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_3);
   calibrateOffsets(current_offset,ADC1_arr);
   HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_RESET);
 
@@ -400,14 +404,14 @@ int main(void)
   }
   f_open(&MyFile,TextFPath,FA_OPEN_APPEND|FA_WRITE);
 
-  HAL_GPIO_WritePin(LED_G_GPIO_Port,LED_G_Pin,GPIO_PIN_SET);
+  HAL_GPIO_WritePin(LED_D13_GPIO_Port,LED_D13_Pin,GPIO_PIN_RESET);
   inverter_state = STATE_READY;
 
   #ifdef TIMING
   prev_time = __HAL_TIM_GET_COUNTER(&htim5);
   #endif
 
-  HAL_GPIO_WritePin(LED_TE_GPIO_Port,LED_TE_Pin,GPIO_PIN_SET);
+  HAL_GPIO_WritePin(LED_D11_GPIO_Port,LED_D11_Pin,GPIO_PIN_SET);
   HAL_TIM_Base_Start_IT(&htim3); 
   prevSD = __HAL_TIM_GET_COUNTER(&htim2);
   /* USER CODE END 2 */
@@ -423,7 +427,7 @@ int main(void)
     volatile int sd_now = __HAL_TIM_GET_COUNTER(&htim2);
     if (sd_now - prevSD >= 1000)
     {
-      HAL_GPIO_WritePin(LED_TR_GPIO_Port,LED_TR_Pin,GPIO_PIN_RESET);
+      HAL_GPIO_WritePin(LED_D11_GPIO_Port,LED_D11_Pin,GPIO_PIN_RESET);
       
       __disable_irq();
       uint8_t buf_num_to_sd = wr_log_buf_num;
@@ -449,7 +453,7 @@ int main(void)
       prevSD = sd_now;
       #endif
 
-      HAL_GPIO_WritePin(LED_TR_GPIO_Port,LED_TR_Pin,GPIO_PIN_SET);
+      HAL_GPIO_WritePin(LED_D11_GPIO_Port,LED_D11_Pin,GPIO_PIN_SET);
     }
     
     }
@@ -484,11 +488,11 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLM = 3;
-  RCC_OscInitStruct.PLL.PLLN = 360;
+  RCC_OscInitStruct.PLL.PLLN = 180;
   RCC_OscInitStruct.PLL.PLLP = 2;
   RCC_OscInitStruct.PLL.PLLQ = 6;
   RCC_OscInitStruct.PLL.PLLR = 2;
-  RCC_OscInitStruct.PLL.PLLRGE = RCC_PLL1VCIRANGE_1;
+  RCC_OscInitStruct.PLL.PLLRGE = RCC_PLL1VCIRANGE_2;
   RCC_OscInitStruct.PLL.PLLVCOSEL = RCC_PLL1VCOWIDE;
   RCC_OscInitStruct.PLL.PLLFRACN = 0;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
@@ -528,11 +532,11 @@ void PeriphCommonClock_Config(void)
   PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_ADC|RCC_PERIPHCLK_SDMMC
                               |RCC_PERIPHCLK_FDCAN;
   PeriphClkInitStruct.PLL2.PLL2M = 3;
-  PeriphClkInitStruct.PLL2.PLL2N = 300;
+  PeriphClkInitStruct.PLL2.PLL2N = 150;
   PeriphClkInitStruct.PLL2.PLL2P = 8;
   PeriphClkInitStruct.PLL2.PLL2Q = 20;
   PeriphClkInitStruct.PLL2.PLL2R = 4;
-  PeriphClkInitStruct.PLL2.PLL2RGE = RCC_PLL2VCIRANGE_1;
+  PeriphClkInitStruct.PLL2.PLL2RGE = RCC_PLL2VCIRANGE_2;
   PeriphClkInitStruct.PLL2.PLL2VCOSEL = RCC_PLL2VCOWIDE;
   PeriphClkInitStruct.PLL2.PLL2FRACN = 0;
   PeriphClkInitStruct.SdmmcClockSelection = RCC_SDMMCCLKSOURCE_PLL2;
@@ -558,10 +562,28 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   // Check which version of the timer triggered this callback and toggle LED
   if (htim == &htim3 )
   {
-    HAL_GPIO_TogglePin(LED_T_GPIO_Port,LED_T_Pin);
+    HAL_GPIO_TogglePin(LED_D8_GPIO_Port,LED_D8_Pin);
     SCB_InvalidateDCache_by_Addr(ADC1_arr,sizeof(ADC1_arr));
     SCB_InvalidateDCache_by_Addr(ADC2_arr,sizeof(ADC2_arr));
     SCB_InvalidateDCache_by_Addr(ADC3_arr,sizeof(ADC3_arr));
+    if(inverter_state == STATE_RUNNING)
+    {
+      HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_SET);
+    }
+    else
+    {
+      HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_RESET);
+    }
+    #ifdef OVERRIDE_OCP
+    if(inverter_state == STATE_RUNNING)
+    {
+      HAL_GPIO_WritePin(Motor_Enable_Override_GPIO_Port,Motor_Enable_Override_Pin,GPIO_PIN_SET);
+    }
+    else
+    {
+      HAL_GPIO_WritePin(Motor_Enable_Override_GPIO_Port,Motor_Enable_Override_Pin,GPIO_PIN_RESET);
+    }
+    #endif
 
     #ifdef TIMING
     uint32_t tick_start = __HAL_TIM_GET_COUNTER(&htim5);     
@@ -572,7 +594,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     indexStatus++;
     CAN_Timer++;
     
-    float angle_now;
+
     Get_Encoder_Angle(ADC2_arr,&angle_now);
     for (size_t i = 0; i < 4; i++)
     {
@@ -615,13 +637,14 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     }
     
 
-    setPhaseVoltage(_constrain(Iq_controller_output+IqOC_controller_output,-voltage_power_supply/2,voltage_power_supply/2),  _constrain(Id_controller_output,-voltage_power_supply/2,voltage_power_supply/2), _electricalAngle(angle_now, pole_pairs),TIM8);
+    setPhaseVoltage(_constrain(Iq_controller_output+IqOC_controller_output,-voltage_power_supply/2,voltage_power_supply/2),  _constrain(Id_controller_output,-voltage_power_supply/2,voltage_power_supply/2), _electricalAngle(angle_now, pole_pairs),TIM1);
+    // setPhaseVoltage(10, 0, _electricalAngle(angle_now, pole_pairs),TIM1);
 
 
     if (indexLED == 5000)
     {
-    	HAL_GPIO_TogglePin(LED_R_GPIO_Port, LED_R_Pin);
-    	// HAL_GPIO_TogglePin(LED_T_GPIO_Port, LED_T_Pin);
+    	HAL_GPIO_TogglePin(LED_D10_GPIO_Port, LED_D10_Pin);
+    	// HAL_GPIO_TogglePin(LED_D13_GPIO_Port, LED_D13_Pin);
       UART_TX_Send(&huart1,"ping");
     	indexLED=0;
     }
@@ -756,7 +779,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     indexTimer++;
     #endif
 
-    HAL_GPIO_TogglePin(LED_T_GPIO_Port,LED_T_Pin);
+    HAL_GPIO_TogglePin(LED_D8_GPIO_Port,LED_D8_Pin);
   }
 }
 
@@ -906,9 +929,9 @@ void CAN_Send_Temp(void)
   uint8_t TempData[6];
   T_Mot = Mot_Conv[ADC3_arr[2]>>6];
   T_MCU = MCU_Conv[ADC3_arr[1]>>6];
-  int16_t T_U = Inv_Conv[ADC3_arr[3]>>6];
-  int16_t T_V = Inv_Conv[ADC3_arr[4]>>6];
-  int16_t T_W = Inv_Conv[ADC3_arr[5]>>6];
+  T_U = Inv_Conv[ADC3_arr[3]>>6];
+  T_V = Inv_Conv[ADC3_arr[4]>>6];
+  T_W = Inv_Conv[ADC3_arr[5]>>6];
   T_Report = maxint16(T_U,maxint16(T_V,T_W));
   //OTP
   if(maxint16(T_Report,T_MCU) > MOS_OTP)

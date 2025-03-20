@@ -102,12 +102,33 @@ void Error_Handler(void);
 #define WL_GPIO_Port GPIOE
 #define WH_Pin GPIO_PIN_13
 #define WH_GPIO_Port GPIOE
-#define LED_T_Pin GPIO_PIN_9
-#define LED_T_GPIO_Port GPIOD
-#define LED_R_Pin GPIO_PIN_7
-#define LED_R_GPIO_Port GPIOG
-#define LED_G_Pin GPIO_PIN_8
-#define LED_G_GPIO_Port GPIOG
+#define LED_B12_Pin GPIO_PIN_12
+#define LED_B12_GPIO_Port GPIOB
+#define LED_B13_Pin GPIO_PIN_13
+#define LED_B13_GPIO_Port GPIOB
+#define LED_B14_Pin GPIO_PIN_14
+#define LED_B14_GPIO_Port GPIOB
+#define LED_B15_Pin GPIO_PIN_15
+#define LED_B15_GPIO_Port GPIOB
+#define LED_D8_Pin GPIO_PIN_8
+#define LED_D8_GPIO_Port GPIOD
+#define LED_D9_Pin GPIO_PIN_9
+#define LED_D9_GPIO_Port GPIOD
+#define LED_D10_Pin GPIO_PIN_10
+#define LED_D10_GPIO_Port GPIOD
+#define LED_D11_Pin GPIO_PIN_11
+#define LED_D11_GPIO_Port GPIOD
+#define LED_D12_Pin GPIO_PIN_12
+#define LED_D12_GPIO_Port GPIOD
+#define LED_D13_Pin GPIO_PIN_13
+#define LED_D13_GPIO_Port GPIOD
+#define BUT_G2_Pin GPIO_PIN_2
+#define BUT_G2_GPIO_Port GPIOG
+#define BUT_G3_Pin GPIO_PIN_3
+#define BUT_G3_GPIO_Port GPIOG
+#define LV_Fault_Pin GPIO_PIN_5
+#define LV_Fault_GPIO_Port GPIOG
+#define LV_Fault_EXTI_IRQn EXTI9_5_IRQn
 #define GATE_Ready_Pin GPIO_PIN_1
 #define GATE_Ready_GPIO_Port GPIOD
 #define GATE_Fault_Pin GPIO_PIN_3
@@ -118,10 +139,6 @@ void Error_Handler(void);
 #define OC_Fault_EXTI_IRQn EXTI4_IRQn
 #define Motor_Enable_Pin GPIO_PIN_5
 #define Motor_Enable_GPIO_Port GPIOD
-#define LED_TR_Pin GPIO_PIN_0
-#define LED_TR_GPIO_Port GPIOE
-#define LED_TE_Pin GPIO_PIN_1
-#define LED_TE_GPIO_Port GPIOE
 
 /* USER CODE BEGIN Private defines */
 
