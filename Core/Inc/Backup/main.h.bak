@@ -133,13 +133,11 @@ void Error_Handler(void);
 #define GATE_Fault_Pin GPIO_PIN_3
 #define GATE_Fault_GPIO_Port GPIOD
 #define GATE_Fault_EXTI_IRQn EXTI3_IRQn
-#define OC_Fault_Pin GPIO_PIN_4
-#define OC_Fault_GPIO_Port GPIOD
-#define OC_Fault_EXTI_IRQn EXTI4_IRQn
 #define Motor_Enable_Pin GPIO_PIN_5
 #define Motor_Enable_GPIO_Port GPIOD
-#define Motor_Enable_Override_Pin GPIO_PIN_6
-#define Motor_Enable_Override_GPIO_Port GPIOD
+#define OC_Fault_Pin GPIO_PIN_6
+#define OC_Fault_GPIO_Port GPIOD
+#define OC_Fault_EXTI_IRQn EXTI9_5_IRQn
 
 /* USER CODE BEGIN Private defines */
 

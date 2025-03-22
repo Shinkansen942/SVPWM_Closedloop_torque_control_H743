@@ -20,6 +20,7 @@
         "stm32h7xx_hal.h": "c",
         "stm32h7xx_hal_conf.h": "c",
         "stm32h7xx_hal_tim_ex.h": "c",
-        "stm32h7xx_hal_def.h": "c"
+        "stm32h7xx_hal_def.h": "c",
+        "lowpass_filter.h": "c"
     }
 }

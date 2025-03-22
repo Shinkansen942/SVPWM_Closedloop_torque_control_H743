@@ -8,7 +8,7 @@
 #ifndef INC_PID_H_
 #define INC_PID_H_
 
-struct PIDController{
+typedef struct PIDController{
 	float P; //!< 比例增益(P环增益)
 	float I; //!< 积分增益（I环增益）
 	float D; //!< 微分增益（D环增益）
@@ -18,6 +18,7 @@ struct PIDController{
     float output_prev;  //!< 最后一个 pid 输出值
     float integral_prev; //!< 最后一个积分分量值
 //    unsigned long timestamp_prev; //!< 上次执行时间戳
-};
-float PID_operator(float error, struct PIDController* pid);
+} pid_t;
+float PID_operator(float error, pid_t* pid);
+void PID_reset(pid_t* pid);
 #endif /* INC_PID_H_ */

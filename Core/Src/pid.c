@@ -37,3 +37,10 @@ float PID_operator(float error, struct PIDController* pid){
 //	pid->timestamp_prev = timestamp_now;
 	return output;
 }
+
+void PID_reset(pid_t* pid)
+{
+	pid->error_prev = 0;
+	pid->output_prev = 0;
+	pid->integral_prev = 0;
+}

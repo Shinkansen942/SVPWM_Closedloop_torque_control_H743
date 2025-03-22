@@ -19,5 +19,6 @@
 #define CAN_ID_STATE 0x290
 #define CAN_ID_HEARTBEAT 0x710
 #define CAN_ID_CONTROL 0x210
+#define CAN_ID_CONFIG 0x110
 
 #endif

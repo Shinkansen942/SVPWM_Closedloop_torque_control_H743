@@ -140,19 +140,23 @@ float cal_angular_vel(float angle_now)
 float cal_Iq(double* current_phase, float angle_el)
 {
 	 angle_el = _normalizeAngle(angle_el + zero_electric_angle);
-	 float I_alpha=current_phase[0];
-	 float I_beta=_1_SQRT3*(2*current_phase[1]+current_phase[0]);
+   float mid = 1.0f/3*(current_phase[0]+current_phase[1]+current_phase[2]);
+	 float I_alpha=current_phase[0]-mid;
+	 float I_beta=_1_SQRT3*(2*(current_phase[1]-mid)+current_phase[0]-mid);
 //	 float Iq=-sin(angle_el)*I_alpha+cos(angle_el)*I_beta;
 //	 float Id=cos(angle_el)*I_alpha+sin(angle_el)*I_beta;
-	 return -sin(angle_el)*I_alpha+cos(angle_el)*I_beta;
+  float Ir = -sin(angle_el)*I_alpha+cos(angle_el)*I_beta;
+	 return Ir;
 }
 
 float cal_Id(double* current_phase, float angle_el)
 {
   angle_el = _normalizeAngle(angle_el + zero_electric_angle);
-  float I_alpha=current_phase[0];
-  float I_beta=_1_SQRT3*(2*current_phase[1]+current_phase[0]);
+  float mid = 1.0f/3*(current_phase[0]+current_phase[1]+current_phase[2]);
+	float I_alpha=current_phase[0]-mid;
+	float I_beta=_1_SQRT3*(2*(current_phase[1]-mid)+current_phase[0]-mid);
 //	 float Iq=-sin(angle_el)*I_alpha+cos(angle_el)*I_beta;
 //	 float Id=cos(angle_el)*I_alpha+sin(angle_el)*I_beta;
-  return cos(angle_el)*I_alpha+sin(angle_el)*I_beta;
+  float Ir = cos(angle_el)*I_alpha+sin(angle_el)*I_beta;
+  return Ir;
 }

@@ -18,6 +18,19 @@ typedef enum
     STATE_ERROR,
 }INV_Statustypedef;
 
+typedef enum
+{
+    ERROR_NONE,
+    ERROR_INSTANT_OC,
+    ERROR_RMS_OC,
+    ERROR_INV_OT,
+    ERROR_MOT_OT,
+    ERROR_ENC,
+    ERROR_CAN_OT,
+    ERROR_GATE,
+    ERROR_HW_OC,
+}INV_Errortypedef;
+
 enum control_bits 
 {
     CTRL_ENABLE = BIT(3),
