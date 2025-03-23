@@ -15,6 +15,9 @@
 #ifndef _PI_2
   #define _PI_2 (M_PI/2)
 #endif
+#ifndef _PI_6
+  #define _PI_6 (M_PI/6)
+#endif
 
 // function approximating the sine calculation by using fixed size array
 // uses a 65 element lookup table and interpolation

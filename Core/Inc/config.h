@@ -10,6 +10,7 @@
 // #define WAIT_GATE_READY //undefine to not wait for gate ready signal
 #define OVERRIDE_OCP    //define to enable hardware ocp override
 // #define CAN_CONFIG      //define to enable use CAN to change variables
+// #define SIXSTEP         //define to enable six step comutation
 
 // Motor number
 #define MOT_RR
@@ -24,7 +25,7 @@
 #define PID_P 1.0f
 #define PID_I 0.02f
 #define PID_D 0.0f
-#define PID_RAMP 1.0f
-#define PID_LIMIT 1000.0f
+#define PID_RAMP 1000.0f
+#define PID_LIMIT 100000.0f
 
 #endif
