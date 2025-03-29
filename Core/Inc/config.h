@@ -3,7 +3,7 @@
 
 // Code Config Options
 #define SDDEBUG           //undefine to disable debug
-#define CAL_ZERO_ANGLE  //undefine to disable zero electrical angle calibration
+// #define CAL_ZERO_ANGLE  //undefine to disable zero electrical angle calibration
 #define TIMING          //undefine to disable loop timing
 // #define CAN_OT_FAULT    //undefine to disable CAN OVERTIME Falut
 #define RMSOCP          //undefine to disable RMS overcurrent protection
@@ -16,8 +16,8 @@
 #define MOT_RR
 
 // Protections
-#define SOFTOCP 10
-#define ACAOCP 150
+#define SOFTOCP 60
+#define ACAOCP 70
 #define MOVRMSOCP 25000000 //should be 10000*OCP^2
 #define MOS_OTP 1000 //should be 10 times otp temp in deg C
 #define MOT_OTP 1200 //should be 10 times otp temp in deg C
