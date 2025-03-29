@@ -620,7 +620,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
       }
     }
     
-
+    voltage_power_supply = (float)ADC3_arr[0]*DCVPLSB;
+    voltage_limit = voltage_power_supply;
     float angular_vel = cal_angular_vel(angle_now);
     float filtered_vel = LowPassFilter_operator(angular_vel,&filter);
     filtered_RPM = LowPassFilter_operator((float)dir*filtered_vel/4/2/M_PI*60,&filter_RPM);
@@ -636,6 +637,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
           Enter_ERROR_State(ERROR_INSTANT_OC);
         }
     }
+
+    pid_controller_current_Ia.limit = voltage_limit;
+    pid_controller_current_Id.limit = voltage_limit;
+    pid_controller_current_Iq.limit = voltage_limit;
+    pid_controller_current_OCP.limit = voltage_limit;
 
     float Id,Iq;
     cal_Idq(current_phase, _electricalAngle(angle_now, pole_pairs), &Id, &Iq);
@@ -691,7 +697,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     	indexLED=0;
     }
 
-    report_DCV = (uint16_t) roundf((float)ADC3_arr[0]*DCVPLSB*100);
+    report_DCV = (uint16_t) roundf(voltage_power_supply*100);
     int16_t report_DCA = (int16_t) roundf((float)(ADC1_arr[3]-current_offset[3])*DCAPLSB*100);
     if (indexHeartbeat == 1000)
     {
