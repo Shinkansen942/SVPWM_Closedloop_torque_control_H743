@@ -9,6 +9,7 @@
 #ifndef M_PI
   #define M_PI 3.14159265358979323846
 #endif
+#define _HIGH_IMPEDANCE 0
 
 extern float zero_electric_angle;
 extern int pole_pairs;
@@ -19,6 +20,16 @@ extern float voltage_power_supply;
 extern int period;
 extern float angle_prev;
 extern float Ts;
+
+int trap_120_map[6][3] = {
+  {_HIGH_IMPEDANCE,1,-1},
+  {-1,1,_HIGH_IMPEDANCE},
+  {-1,_HIGH_IMPEDANCE,1},
+  {_HIGH_IMPEDANCE,-1,1},
+  {1,-1,_HIGH_IMPEDANCE},
+  {1,_HIGH_IMPEDANCE,-1} 
+};
+
 
 float _normalizeAngle(float angle){
   float a = fmod(angle, 2*M_PI);   //取余运算可以用于归一化，列出特殊值例子算便知
@@ -90,11 +101,11 @@ void setPwm(float Ua, float Ub, float Uc, TIM_TypeDef * TIM_BASE) {
 
 void setPhaseVoltage(float Uq,float Ud, float angle_el, TIM_TypeDef * TIM_BASE) {
   angle_el = _normalizeAngle(angle_el + zero_electric_angle);
-  if (Uq <0 ){
-	  angle_el+=M_PI;
-	  Uq=fabsf(Uq);
-  }
-  angle_el =  _normalizeAngle (angle_el+M_PI/2);
+  // if (Uq <0 ){
+	//   angle_el+=M_PI;
+	//   Uq=fabsf(Uq);
+  // }
+  // angle_el =  _normalizeAngle (angle_el+M_PI/2);
   // int sector = floor(angle_el / M_PI*3) + 1;
   // calculate the duty cycles
   float sa;
@@ -119,6 +130,33 @@ void setPhaseVoltage(float Uq,float Ud, float angle_el, TIM_TypeDef * TIM_BASE) 
   setPwm(Ua,Ub,Uc,TIM_BASE);
 }
 
+void setSixStepPhaseVoltage(float Uq, float angle_el, TIM_TypeDef* TIM_BASE)
+{
+  float center;
+  int sector;
+  float Ua,Ub,Uc;
+  sector = 6 * (_normalizeAngle(angle_el + (M_PI/6) ) / (2*M_PI)); // adding PI/6 to align with other modes
+  // centering the voltages around either
+  // modulation_centered == true > driver.voltage_limit/2
+  // modulation_centered == false > or Adaptable centering, all phases drawn to 0 when Uq=0
+  center = voltage_power_supply/2;
+  if(trap_120_map[sector][0]  == _HIGH_IMPEDANCE){
+    Ua = center;
+    Ub = trap_120_map[sector][1] * Uq + center;
+    Uc = trap_120_map[sector][2] * Uq + center;
+  }else if(trap_120_map[sector][1]  == _HIGH_IMPEDANCE){
+    Ua = trap_120_map[sector][0] * Uq + center;
+    Ub = center;
+    Uc = trap_120_map[sector][2] * Uq + center;
+  }else{
+    Ua = trap_120_map[sector][0] * Uq + center;
+    Ub = trap_120_map[sector][1] * Uq + center;
+    Uc = center;
+  }
+
+  setPwm(Ua,Ub,Uc,TIM_BASE);
+}
+
 float cal_angular_vel(float angle_now)
 {
     if (angle_prev < 0){
@@ -137,26 +175,13 @@ float cal_angular_vel(float angle_now)
 
 
 }
-float cal_Iq(double* current_phase, float angle_el)
+void cal_Idq(float* current_phase, float angle_el, float* Id, float* Iq)
 {
-	 angle_el = _normalizeAngle(angle_el + zero_electric_angle);
-   float mid = 1.0f/3*(current_phase[0]+current_phase[1]+current_phase[2]);
-	 float I_alpha=current_phase[0]-mid;
-	 float I_beta=_1_SQRT3*(2*(current_phase[1]-mid)+current_phase[0]-mid);
+	angle_el = _normalizeAngle(angle_el + zero_electric_angle);
+	float I_alpha=current_phase[0];
+	float I_beta=_1_SQRT3*(2*current_phase[1]+current_phase[0]);
 //	 float Iq=-sin(angle_el)*I_alpha+cos(angle_el)*I_beta;
 //	 float Id=cos(angle_el)*I_alpha+sin(angle_el)*I_beta;
-  float Ir = -sin(angle_el)*I_alpha+cos(angle_el)*I_beta;
-	 return Ir;
-}
-
-float cal_Id(double* current_phase, float angle_el)
-{
-  angle_el = _normalizeAngle(angle_el + zero_electric_angle);
-  float mid = 1.0f/3*(current_phase[0]+current_phase[1]+current_phase[2]);
-	float I_alpha=current_phase[0]-mid;
-	float I_beta=_1_SQRT3*(2*(current_phase[1]-mid)+current_phase[0]-mid);
-//	 float Iq=-sin(angle_el)*I_alpha+cos(angle_el)*I_beta;
-//	 float Id=cos(angle_el)*I_alpha+sin(angle_el)*I_beta;
-  float Ir = cos(angle_el)*I_alpha+sin(angle_el)*I_beta;
-  return Ir;
+	*Iq = -sin(angle_el)*I_alpha+cos(angle_el)*I_beta;
+  *Id = cos(angle_el)*I_alpha+sin(angle_el)*I_beta;
 }

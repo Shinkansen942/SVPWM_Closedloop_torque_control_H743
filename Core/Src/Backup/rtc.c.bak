@@ -31,14 +31,16 @@ void MX_RTC_Init(void)
 {
 
   /* USER CODE BEGIN RTC_Init 0 */
-
+  RTC_TimeTypeDef sTime;
+  RTC_DateTypeDef sDate;
+  #ifdef SET_DATE_TO_ZERO_ON_RESET
   /* USER CODE END RTC_Init 0 */
 
   RTC_TimeTypeDef sTime = {0};
   RTC_DateTypeDef sDate = {0};
 
   /* USER CODE BEGIN RTC_Init 1 */
-
+  #endif
   /* USER CODE END RTC_Init 1 */
 
   /** Initialize RTC Only
@@ -99,7 +101,7 @@ void HAL_RTC_MspInit(RTC_HandleTypeDef* rtcHandle)
   /** Initializes the peripherals clock
   */
     PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_RTC;
-    PeriphClkInitStruct.RTCClockSelection = RCC_RTCCLKSOURCE_LSI;
+    PeriphClkInitStruct.RTCClockSelection = RCC_RTCCLKSOURCE_LSE;
     if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK)
     {
       Error_Handler();

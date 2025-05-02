@@ -1,5 +1,6 @@
 #include "sincos_encoder.h"
 
+
 void Get_Encoder_Angle(uint16_t *val_arr, float *angle_el)
 {
     int16_t _sv = val_arr[0]-val_arr[1];

@@ -31,14 +31,16 @@ void MX_RTC_Init(void)
 {
 
   /* USER CODE BEGIN RTC_Init 0 */
-
+  RTC_TimeTypeDef sTime;
+  RTC_DateTypeDef sDate;
+  #ifdef SET_DATE_TO_ZERO_ON_RESET
   /* USER CODE END RTC_Init 0 */
 
   RTC_TimeTypeDef sTime = {0};
   RTC_DateTypeDef sDate = {0};
 
   /* USER CODE BEGIN RTC_Init 1 */
-
+  #endif
   /* USER CODE END RTC_Init 1 */
 
   /** Initialize RTC Only
@@ -62,6 +64,7 @@ void MX_RTC_Init(void)
 
   /** Initialize RTC and set the Time and Date
   */
+  #ifdef SET_DATE_TO_ZERO_ON_RESET
   sTime.Hours = 0x0;
   sTime.Minutes = 0x0;
   sTime.Seconds = 0x0;
@@ -75,6 +78,7 @@ void MX_RTC_Init(void)
   sDate.Month = RTC_MONTH_JANUARY;
   sDate.Date = 0x1;
   sDate.Year = 0x0;
+  #endif
 
   if (HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BCD) != HAL_OK)
   {
