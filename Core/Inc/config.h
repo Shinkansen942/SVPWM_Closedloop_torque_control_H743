@@ -2,14 +2,14 @@
 #define __CONFIG_H__
 
 // Code Config Options
-#define SDDEBUG           //undefine to disable debug
+// #define SDDEBUG           //undefine to disable debug
 // #define CAL_ZERO_ANGLE  //undefine to disable zero electrical angle calibration
 #define TIMING          //undefine to disable loop timing
 // #define CAN_OT_FAULT    //undefine to disable CAN OVERTIME Falut
 #define RMSOCP          //undefine to disable RMS overcurrent protection
 // #define WAIT_GATE_READY //undefine to not wait for gate ready signal
 #define OVERRIDE_OCP    //define to enable hardware ocp override
-// #define CAN_CONFIG      //define to enable use CAN to change variables
+#define CAN_CONFIG      //define to enable use CAN to change variables
 // #define SIXSTEP         //define to enable six step comutation
 
 // Motor number

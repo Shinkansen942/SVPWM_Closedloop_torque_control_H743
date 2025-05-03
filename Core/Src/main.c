@@ -46,7 +46,9 @@
 #include "current_sense.h"
 #include "inverter_state.h"
 #include "logger.h"
+// #include "stdio.h"
 // #include "stm32h7xx_hal_tim_ex.h"
+#include "time.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -84,6 +86,8 @@ void CAN_Send_State(uint16_t DCV, int16_t DCA);
 void CAN_Send_Status(uint16_t report_status,int16_t FB_Torque,int16_t Speed);
 void CAN_Send_Temp(void);
 void CAN_Send_Heartbeat(void);
+void set_time (uint8_t hr, uint8_t min, uint8_t sec);
+void set_date (uint8_t year, uint8_t month, uint8_t date, uint8_t day);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -96,6 +100,7 @@ __attribute__((section("._RAM_Area"))) FIL MyFile;     /* File object */
 
 //Logging Buffers
 __attribute__((section("._RAM_Area"))) logger_t log_buf[2][7500];
+__attribute__((section("._RAM_Area"))) logger_t log_test[2][2];
 uint8_t wr_log_buf_num = 0;
 uint16_t wr_log_index = 0;
 RTC_DateTypeDef log_date;
@@ -143,6 +148,7 @@ int indexStatus=0;
 int indexTimer = 0;
 int prevSD = 0;
 int prevWhileTest = 0;
+int got_date = 0;
 
 float Ts=(float)1/10000;
 float angle_prev=-1.0f;
@@ -200,18 +206,18 @@ int isSent = 1;
 uint16_t control;
 int CAN_Timer = 0;
 
-const char TestFPath[] = {"Test.txt"};
-const char TextFPath[] = {"Text.bin"};
+const char TestFPath[] = {"Test.bin"};
+char TextFPath[40];
 
 lpf_t filter= {.Tf=0.001,.y_prev=0.0f};         //Tf=1ms
 lpf_t filter_current_Iq= {.Tf=0.05,.y_prev=0.0f}; //Tf=5ms
 lpf_t filter_current_Id= {.Tf=0.05,.y_prev=0.0f}; //Tf=5ms
 lpf_t filter_current_Iabc[3] = {{.Tf = 0.002,.y_prev=0.0f},{.Tf = 0.002,.y_prev=0.0f},{.Tf = 0.002,.y_prev=0.0f}}; //Tf=2ms
 lpf_t filter_RPM = {.Tf=0.05,.y_prev=0.0f};
-pid_t pid_controller_current_Iq = {.P=0.5f,.I=25.0f,.D=PID_D,.output_ramp=PID_RAMP,.limit=PID_LIMIT,.error_prev=0,.output_prev=0,.integral_prev=0};
-pid_t pid_controller_current_Id = {.P=0.37f,.I=25.0f,.D=PID_D,.output_ramp=PID_RAMP,.limit=PID_LIMIT,.error_prev=0,.output_prev=0,.integral_prev=0};
-pid_t pid_controller_current_OCP = {.P=1.0f,.I=1.0f,.D=PID_D,.output_ramp=PID_RAMP,.limit=PID_LIMIT,.error_prev=0,.output_prev=0,.integral_prev=0};
-pid_t pid_controller_current_Ia = {.P=1.0f,.I=1.0f,.D=PID_D,.output_ramp=PID_RAMP,.limit=PID_LIMIT,.error_prev=0,.output_prev=0,.integral_prev=0};
+pidc_t pid_controller_current_Iq = {.P=0.5f,.I=25.0f,.D=PID_D,.output_ramp=PID_RAMP,.limit=PID_LIMIT,.error_prev=0,.output_prev=0,.integral_prev=0};
+pidc_t pid_controller_current_Id = {.P=0.37f,.I=25.0f,.D=PID_D,.output_ramp=PID_RAMP,.limit=PID_LIMIT,.error_prev=0,.output_prev=0,.integral_prev=0};
+pidc_t pid_controller_current_OCP = {.P=1.0f,.I=1.0f,.D=PID_D,.output_ramp=PID_RAMP,.limit=PID_LIMIT,.error_prev=0,.output_prev=0,.integral_prev=0};
+pidc_t pid_controller_current_Ia = {.P=1.0f,.I=1.0f,.D=PID_D,.output_ramp=PID_RAMP,.limit=PID_LIMIT,.error_prev=0,.output_prev=0,.integral_prev=0};
 
 int16_t maxint16(int16_t a,int16_t b)
 {
@@ -339,8 +345,7 @@ int main(void)
   BSP_SD_Init();
   HAL_SD_InitCard(&hsd1);
 
-  #ifdef SDDEBUG
-  volatile int sdcard_status = HAL_SD_GetCardState(&hsd1);
+  volatile int sdcard_status = HAL_SD_GetCardState(&hsd1);  
   if(sdcard_status == HAL_SD_CARD_TRANSFER)
   {
     res = f_mount(&SDFatFS_RAM,(TCHAR const*)SDPath,1);
@@ -351,6 +356,7 @@ int main(void)
     }
     else
     {
+      #ifdef SDDEBUG
       res = f_open(&MyFile,TestFPath,FA_CREATE_ALWAYS | FA_WRITE);
       if (res != FR_OK)
       {
@@ -358,16 +364,18 @@ int main(void)
       }
       else
       {
-        f_write(&MyFile,wtext,sizeof(wtext),(void *)&byteswritten);
+        set_one(log_test);
+        f_write(&MyFile,&log_test,sizeof(log_test),(void *)&byteswritten);
         res = f_close(&MyFile);
         if(res!=FR_OK)
         {
           Error_Handler();
         }
       }
+      #endif
     }
   }
-  #endif
+  
 
   // Init ADC DMA
   HAL_ADC_Start_DMA(&hadc1,(uint32_t*)ADC1_arr,4);
@@ -413,10 +421,17 @@ int main(void)
   
   Config_Fdcan1();
 
+  // while (!got_date)
+  // {
+  //   HAL_Delay(10);
+  // }  
+
   //Get DateTime
   HAL_RTC_GetDate(&hrtc,&log_date,RTC_FORMAT_BIN);
-  HAL_RTC_GetTime(&hrtc,&log_time,RTC_FORMAT_BIN);
+  HAL_RTC_GetTime(&hrtc,&log_time,RTC_FORMAT_BIN);  
 
+  snprintf(TextFPath, sizeof(TextFPath),"%04d%02d%02d_%02d%02d%02d.bin",(int)log_date.Year+2000,(int)log_date.Month,(int)log_date.Date,(int)log_time.Hours,(int)log_time.Minutes,(int)log_time.Seconds);
+  // snprintf(TextFPath, sizeof(TextFPath),"text.bin");
   res = f_open(&MyFile,TextFPath,FA_CREATE_ALWAYS|FA_WRITE);
   if(res == FR_OK)
   {
@@ -897,22 +912,59 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
   }
 }
 
-#ifdef CAN_CONFIG
 void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo1ITs)
 {
   if((RxFifo1ITs & FDCAN_IT_RX_FIFO1_NEW_MESSAGE)!=0)
   {
     HAL_GPIO_TogglePin(LED_B13_GPIO_Port,LED_B13_Pin);
-    uint8_t RxData1[4];
+    uint8_t RxData1[16];
     HAL_FDCAN_GetRxMessage(hfdcan,FDCAN_RX_FIFO1,&RxHeader1,RxData1);
     if(hfdcan->Instance == FDCAN1)
     {
-      uint16_t uintdata = RxData1[0] | RxData1[1] << 8;
-      zero_electric_angle = 6.28f*uintdata/1000;
+      if(RxHeader1.Identifier == 0x100)
+      {
+        volatile uint32_t sec_from_midnight = RxData1[0] | RxData1[1] << 8 | RxData1[2] << 16 | RxData1[3] << 24;
+        volatile uint16_t day_from_1984 = RxData1[4] | RxData1 [5] << 8;
+        sec_from_midnight/=1000;
+        time_t now = day_from_1984*86400+sec_from_midnight+441763200;
+        struct tm now_tm;
+        gmtime_r(&now,&now_tm);
+
+        set_time(now_tm.tm_hour,now_tm.tm_min,now_tm.tm_sec);
+        set_date(now_tm.tm_year-100,now_tm.tm_mon,now_tm.tm_mday,now_tm.tm_wday);
+        got_date = 1;
+      }
+      else if (RxHeader1.Identifier == 0x200)
+      {
+        float val;
+        uint8_t bytes[4] = {RxData1[4],RxData1[3],RxData1[2],RxData1[1]};
+        memcpy(&val,&bytes,sizeof(val));
+        switch (RxData1[0])
+        {
+        case 0x1:
+          pid_controller_current_Iq.P = val;
+          break;
+
+        case 0x2:
+          pid_controller_current_Iq.I = val;
+          break;
+        
+        case 0x11:
+          pid_controller_current_Id.P = val;
+          break;
+
+        case 0x12:
+          pid_controller_current_Id.I = val;
+          break;
+        
+        default:
+          break;
+        }
+      }
+      
     }
   }
 }
-#endif
 
 void HAL_FDCAN_ErrorStatusCallback(FDCAN_HandleTypeDef *hfdcan, uint32_t ErrorStatusITs)
 {
@@ -938,13 +990,24 @@ void Config_Fdcan1(void)
   {
     Error_Handler();
   }
-
+  // FDCAN_FilterTypeDef CAN1RxFilterConfig;
+  CAN1RxFilterConfig.IdType = FDCAN_STANDARD_ID;
+  CAN1RxFilterConfig.FilterIndex = 0;
+  CAN1RxFilterConfig.FilterType = FDCAN_FILTER_DUAL;
+  CAN1RxFilterConfig.FilterConfig = FDCAN_FILTER_TO_RXFIFO1;
+  CAN1RxFilterConfig.FilterID1 = 0x100;
+  CAN1RxFilterConfig.FilterID2 = 0x7FF;
+  CAN1RxFilterConfig.RxBufferIndex = 0;
+  if (HAL_FDCAN_ConfigFilter(&hfdcan1,&CAN1RxFilterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
   #ifdef CAN_CONFIG
   CAN1RxFilterConfig.IdType = FDCAN_STANDARD_ID;
   CAN1RxFilterConfig.FilterIndex = 0;
   CAN1RxFilterConfig.FilterType = FDCAN_FILTER_DUAL;
   CAN1RxFilterConfig.FilterConfig = FDCAN_FILTER_TO_RXFIFO1;
-  CAN1RxFilterConfig.FilterID1 = CAN_ID_CONFIG+MOT_ID;
+  CAN1RxFilterConfig.FilterID1 = 0x200;
   CAN1RxFilterConfig.FilterID2 = 0x7FF;
   CAN1RxFilterConfig.RxBufferIndex = 0;
   if (HAL_FDCAN_ConfigFilter(&hfdcan1,&CAN1RxFilterConfig) != HAL_OK)
@@ -961,12 +1024,10 @@ void Config_Fdcan1(void)
   {
     Error_Handler();
   }
-  #ifdef CAN_CONFIG
   if (HAL_FDCAN_ActivateNotification(&hfdcan1,FDCAN_IT_RX_FIFO1_NEW_MESSAGE,0) != HAL_OK)
   {
     Error_Handler();
   }
-  #endif
   if (HAL_FDCAN_ActivateNotification(&hfdcan1,FDCAN_IT_BUS_OFF,0) != HAL_OK)
   {
     Error_Handler();
@@ -1042,6 +1103,35 @@ void CAN_Send_Temp(void)
   TempData[4] = T_Mot;
   TempData[5] = T_Mot >> 8;
   CAN1_SetMsg(&TempHeader,TempData);
+}
+
+void set_time (uint8_t hr, uint8_t min, uint8_t sec)
+{
+	RTC_TimeTypeDef sTime = {0};
+	sTime.Hours = hr;
+	sTime.Minutes = min;
+	sTime.Seconds = sec;
+	sTime.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
+	sTime.StoreOperation = RTC_STOREOPERATION_RESET;
+	if (HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BIN) != HAL_OK)
+	{
+		Error_Handler();
+	}
+}
+
+void set_date (uint8_t year, uint8_t month, uint8_t date, uint8_t day)  // monday = 1
+{
+	RTC_DateTypeDef sDate = {0};
+	sDate.WeekDay = day;
+	sDate.Month = month;
+	sDate.Date = date;
+	sDate.Year = year;
+	if (HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BIN) != HAL_OK)
+	{
+		Error_Handler();
+	}
+
+	HAL_RTCEx_BKUPWrite(&hrtc, RTC_BKP_DR1, 0x2345);  // backup register
 }
 
 void CAN_Send_Heartbeat(void)

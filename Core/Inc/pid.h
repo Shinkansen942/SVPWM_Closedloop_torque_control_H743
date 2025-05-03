@@ -18,7 +18,7 @@ typedef struct PIDController{
     float output_prev;  //!< 最后一个 pid 输出值
     float integral_prev; //!< 最后一个积分分量值
 //    unsigned long timestamp_prev; //!< 上次执行时间戳
-} pid_t;
-float PID_operator(float error, pid_t* pid);
-void PID_reset(pid_t* pid);
+} pidc_t;
+float PID_operator(float error, pidc_t* pid);
+void PID_reset(pidc_t* pid);
 #endif /* INC_PID_H_ */

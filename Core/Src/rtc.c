@@ -59,12 +59,11 @@ void MX_RTC_Init(void)
   }
 
   /* USER CODE BEGIN Check_RTC_BKUP */
-
+  #ifdef SET_DATE_TO_ZERO_ON_RESET
   /* USER CODE END Check_RTC_BKUP */
 
   /** Initialize RTC and set the Time and Date
   */
-  #ifdef SET_DATE_TO_ZERO_ON_RESET
   sTime.Hours = 0x0;
   sTime.Minutes = 0x0;
   sTime.Seconds = 0x0;
@@ -78,14 +77,13 @@ void MX_RTC_Init(void)
   sDate.Month = RTC_MONTH_JANUARY;
   sDate.Date = 0x1;
   sDate.Year = 0x0;
-  #endif
 
   if (HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BCD) != HAL_OK)
   {
     Error_Handler();
   }
   /* USER CODE BEGIN RTC_Init 2 */
-
+  #endif
   /* USER CODE END RTC_Init 2 */
 
 }

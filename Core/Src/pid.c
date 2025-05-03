@@ -45,7 +45,7 @@ float PID_operator(float error, struct PIDController* pid){
 	return output;
 }
 
-void PID_reset(pid_t* pid)
+void PID_reset(pidc_t* pid)
 {
 	pid->error_prev = 0;
 	pid->output_prev = 0;
