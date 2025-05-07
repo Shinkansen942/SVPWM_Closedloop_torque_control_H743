@@ -150,7 +150,8 @@ int prevSD = 0;
 int prevWhileTest = 0;
 int got_date = 0;
 
-float Ts=(float)1/10000;
+int freq = 46000;
+float Ts=(float)1/45994;
 float angle_prev=-1.0f;
 const float torque_constant = 0.291f; //Nm/A
 const float max_torque = 25;
@@ -214,8 +215,8 @@ lpf_t filter_current_Iq= {.Tf=0.05,.y_prev=0.0f}; //Tf=5ms
 lpf_t filter_current_Id= {.Tf=0.05,.y_prev=0.0f}; //Tf=5ms
 lpf_t filter_current_Iabc[3] = {{.Tf = 0.002,.y_prev=0.0f},{.Tf = 0.002,.y_prev=0.0f},{.Tf = 0.002,.y_prev=0.0f}}; //Tf=2ms
 lpf_t filter_RPM = {.Tf=0.05,.y_prev=0.0f};
-pidc_t pid_controller_current_Iq = {.P=0.5f,.I=25.0f,.D=PID_D,.output_ramp=PID_RAMP,.limit=PID_LIMIT,.error_prev=0,.output_prev=0,.integral_prev=0};
-pidc_t pid_controller_current_Id = {.P=0.37f,.I=25.0f,.D=PID_D,.output_ramp=PID_RAMP,.limit=PID_LIMIT,.error_prev=0,.output_prev=0,.integral_prev=0};
+pidc_t pid_controller_current_Iq = {.P=0.25f,.I=5.0f,.D=PID_D,.output_ramp=PID_RAMP,.limit=PID_LIMIT,.error_prev=0,.output_prev=0,.integral_prev=0};
+pidc_t pid_controller_current_Id = {.P=0.15f,.I=5.0f,.D=PID_D,.output_ramp=PID_RAMP,.limit=PID_LIMIT,.error_prev=0,.output_prev=0,.integral_prev=0};
 pidc_t pid_controller_current_OCP = {.P=1.0f,.I=1.0f,.D=PID_D,.output_ramp=PID_RAMP,.limit=PID_LIMIT,.error_prev=0,.output_prev=0,.integral_prev=0};
 pidc_t pid_controller_current_Ia = {.P=1.0f,.I=1.0f,.D=PID_D,.output_ramp=PID_RAMP,.limit=PID_LIMIT,.error_prev=0,.output_prev=0,.integral_prev=0};
 
@@ -448,7 +449,8 @@ int main(void)
   #endif
 
   HAL_GPIO_WritePin(LED_D11_GPIO_Port,LED_D11_Pin,GPIO_PIN_SET);
-  HAL_TIM_Base_Start_IT(&htim3); 
+  HAL_TIM_Base_Start_IT(&htim1); 
+  HAL_TIM_Base_Start_IT(&htim3);
   prevSD = __HAL_TIM_GET_COUNTER(&htim2);
   /* USER CODE END 2 */
 
@@ -595,7 +597,7 @@ void PeriphCommonClock_Config(void)
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
   // Check which version of the timer triggered this callback and toggle LED
-  if (htim == &htim3 )
+  if (htim == &htim1)
   {
     HAL_GPIO_TogglePin(LED_D8_GPIO_Port,LED_D8_Pin);
     SCB_InvalidateDCache_by_Addr(ADC1_arr,sizeof(ADC1_arr));
@@ -689,7 +691,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     setSixStepPhaseVoltage(-Ia_controller_output,_electricalAngle(angle_now,pole_pairs),TIM1);
     #endif
 
-    if (indexLED == 5000)
+    if (indexLED == freq/2)
     {
     	if(inverter_state == STATE_READY)
       {
@@ -715,7 +717,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
     report_DCV = (uint16_t) roundf(voltage_power_supply*100);
     int16_t report_DCA = (int16_t) roundf((float)(ADC1_arr[3]-current_offset[3])*DCAPLSB*100);
-    if (indexHeartbeat == 1000)
+    if (indexHeartbeat == freq/10)
     {
       CAN_Send_Temp();
       CAN_Send_State(report_DCV,report_DCA);
@@ -740,7 +742,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
       report_status |= REPORT_STATUS_HV;
     }
 
-    if (indexStatus == 100)
+    if (indexStatus == freq/100)
     {
       // int_RPM = (int) lroundf(filtered_RPM);
       int16_t report_RPM = (int) roundf(filtered_RPM);
@@ -834,7 +836,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
       max_btw = btw_time;
     }
     prev_time = tick_start;
-    if (indexTimer == 100000)
+    if (indexTimer == freq*10)
     {
       max_time = 0;
       min_time = INT16_MAX;
@@ -847,6 +849,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
     HAL_GPIO_TogglePin(LED_D8_GPIO_Port,LED_D8_Pin);
   }
+  // else if (htim == &htim1)
+  // {
+  //   HAL_GPIO_TogglePin(LED_B12_GPIO_Port,LED_B12_Pin);
+  // }
+  
 }
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_PIN)

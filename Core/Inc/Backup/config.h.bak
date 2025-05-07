@@ -9,7 +9,7 @@
 #define RMSOCP          //undefine to disable RMS overcurrent protection
 // #define WAIT_GATE_READY //undefine to not wait for gate ready signal
 #define OVERRIDE_OCP    //define to enable hardware ocp override
-// #define CAN_CONFIG      //define to enable use CAN to change variables
+#define CAN_CONFIG      //define to enable use CAN to change variables
 // #define SIXSTEP         //define to enable six step comutation
 
 // Motor number
