@@ -9,6 +9,7 @@ typedef struct LOGGER
     uint8_t     LGMIN;      //Minute                        1Byte
     uint8_t     LGSEC;      //Second                        1Byte
     // uint8_t     PAD;        //padding                       1Byte
+    uint8_t     LGERR;      //Error if present              1Byte
     uint16_t    LGSUBSEC;   //Subsecond                     2Byte
     uint16_t    LGDCV;      //10*DC Voltage                 2Byte
     int16_t     LGDCA;      //100*DC Current                2Byte
