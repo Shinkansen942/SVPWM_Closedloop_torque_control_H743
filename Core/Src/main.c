@@ -62,6 +62,7 @@
 #endif
 #define MAX_ANGLE_VALUE 4096
 #define CLEAR_BIT(REG, BIT)   ((REG) &= ~(BIT))
+#define CODE_VER 0x3
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -92,6 +93,9 @@ void set_date (uint8_t year, uint8_t month, uint8_t date, uint8_t day);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
+volatile int code_ver = 0;
+
 char data[500];
 __attribute__((section("._RAM_Area"))) static char tdata[500];
 
@@ -156,7 +160,8 @@ float Ts=(float)1/45994;
 float angle_prev=-1.0f;
 const float torque_constant = 0.291f; //Nm/A
 const float max_torque = 25;
-float percent_torque_requested = 0.02f;
+float percent_torque_requested = 0.0f;
+float last_torque = 0.0f;
 uint16_t current_offset[4];
 float current_phase[3];
 const int16_t Mot_Conv[1024] = {1361,1353,1345,1337,1329,1322,1314,1306,1298,1290,1283,1275,1267,1259,1251,1244,1236,1228,1220,1212,1205,1197,1189,1181,1173,1166,1158,1150,1142,1134,1126,1119,1111,1103,1095,1087,1080,1072,1064,1056,1048,1041,1033,1025,1017,1009,1002,994,986,978,970,963,955,947,939,931,924,916,908,900,892,885,877,869,861,853,845,838,830,822,814,806,799,791,783,775,767,760,752,744,736,728,721,713,705,697,689,682,674,666,658,650,643,635,627,619,611,604,596,588,580,572,565,557,549,541,533,525,518,510,502,494,486,479,471,463,455,447,440,432,424,416,408,401,393,385,377,369,362,354,346,338,330,323,315,307,299,291,284,276,268,260,252,245,237,229,221,213,205,198,190,182,174,166,159,151,143,135,127,120,112,104,96,88,81,73,65,57,49,42,34,26,18,10,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
@@ -212,12 +217,12 @@ const char TestFPath[] = {"Test.bin"};
 char TextFPath[40];
 
 lpf_t filter= {.Tf=0.001,.y_prev=0.0f};         //Tf=1ms
-lpf_t filter_current_Iq= {.Tf=0.05,.y_prev=0.0f}; //Tf=5ms
-lpf_t filter_current_Id= {.Tf=0.05,.y_prev=0.0f}; //Tf=5ms
+lpf_t filter_current_Iq= {.Tf=0.02,.y_prev=0.0f}; //Tf=20ms
+lpf_t filter_current_Id= {.Tf=0.02,.y_prev=0.0f}; //Tf=20ms
 lpf_t filter_current_Iabc[3] = {{.Tf = 0.002,.y_prev=0.0f},{.Tf = 0.002,.y_prev=0.0f},{.Tf = 0.002,.y_prev=0.0f}}; //Tf=2ms
 lpf_t filter_RPM = {.Tf=0.05,.y_prev=0.0f};
-pidc_t pid_controller_current_Iq = {.P=2.4f,.I=10.0f,.D=PID_D,.output_ramp=PID_RAMP,.limit=PID_LIMIT,.error_prev=0,.output_prev=0,.integral_prev=0};
-pidc_t pid_controller_current_Id = {.P=1.44f,.I=10.0f,.D=PID_D,.output_ramp=PID_RAMP,.limit=PID_LIMIT,.error_prev=0,.output_prev=0,.integral_prev=0};
+pidc_t pid_controller_current_Iq = {.P=2.0f,.I=2.5f,.D=PID_D,.output_ramp=PID_RAMP,.limit=PID_LIMIT,.error_prev=0,.output_prev=0,.integral_prev=0};
+pidc_t pid_controller_current_Id = {.P=1.2f,.I=2.5f,.D=PID_D,.output_ramp=PID_RAMP,.limit=PID_LIMIT,.error_prev=0,.output_prev=0,.integral_prev=0};
 pidc_t pid_controller_current_OCP = {.P=1.0f,.I=1.0f,.D=PID_D,.output_ramp=PID_RAMP,.limit=PID_LIMIT,.error_prev=0,.output_prev=0,.integral_prev=0};
 pidc_t pid_controller_current_Ia = {.P=1.0f,.I=1.0f,.D=PID_D,.output_ramp=PID_RAMP,.limit=PID_LIMIT,.error_prev=0,.output_prev=0,.integral_prev=0};
 
@@ -255,6 +260,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
+  code_ver = CODE_VER;
   volatile FRESULT res;                                 /* FatFs function common result code */
 	uint32_t byteswritten, bytesread;                     /* File write/read counts */
 	uint8_t wtext[] = "This is STM32 working with FatFs\n"; /* File write buffer */
@@ -432,7 +438,7 @@ int main(void)
   HAL_RTC_GetDate(&hrtc,&log_date,RTC_FORMAT_BIN);
   HAL_RTC_GetTime(&hrtc,&log_time,RTC_FORMAT_BIN);  
 
-  snprintf(TextFPath, sizeof(TextFPath),"%04d%02d%02d_%02d%02d%02d.bin",(int)log_date.Year+2000,(int)log_date.Month,(int)log_date.Date,(int)log_time.Hours,(int)log_time.Minutes,(int)log_time.Seconds);
+  snprintf(TextFPath, sizeof(TextFPath),"%04d%02d%02d_%02d%02d%02d_INIT.bin",(int)log_date.Year+2000,(int)log_date.Month,(int)log_date.Date,(int)log_time.Hours,(int)log_time.Minutes,(int)log_time.Seconds);
   // snprintf(TextFPath, sizeof(TextFPath),"text.bin");
   res = f_open(&MyFile,TextFPath,FA_CREATE_ALWAYS|FA_WRITE);
   if(res == FR_OK)
@@ -444,6 +450,7 @@ int main(void)
   HAL_GPIO_WritePin(LED_D13_GPIO_Port,LED_D13_Pin,GPIO_PIN_RESET);
   inverter_state = STATE_READY;
   error_state = ERROR_NONE;
+  INV_Statustypedef last_state = inverter_state;
 
   #ifdef TIMING
   prev_time = __HAL_TIM_GET_COUNTER(&htim5);
@@ -481,8 +488,34 @@ int main(void)
         }
         f_open(&MyFile,TextFPath,FA_OPEN_APPEND|FA_WRITE);
       }
-
-      
+      if(last_state != inverter_state)
+      {
+        if (inverter_state == STATE_RUNNING)
+        {
+          f_close(&MyFile);
+          snprintf(TextFPath, sizeof(TextFPath),"%04d%02d%02d_%02d%02d%02d_EN.bin",(int)log_date.Year+2000,(int)log_date.Month,(int)log_date.Date,(int)log_time.Hours,(int)log_time.Minutes,(int)log_time.Seconds);
+          // snprintf(TextFPath, sizeof(TextFPath),"text.bin");
+          res = f_open(&MyFile,TextFPath,FA_CREATE_ALWAYS|FA_WRITE);
+          if(res == FR_OK)
+          {
+            f_close(&MyFile);
+          }
+          f_open(&MyFile,TextFPath,FA_OPEN_APPEND|FA_WRITE);
+        }
+        else if (inverter_state == STATE_READY || inverter_state == STATE_ERROR)
+        {
+          f_close(&MyFile);
+          snprintf(TextFPath, sizeof(TextFPath),"%04d%02d%02d_%02d%02d%02d_DEN.bin",(int)log_date.Year+2000,(int)log_date.Month,(int)log_date.Date,(int)log_time.Hours,(int)log_time.Minutes,(int)log_time.Seconds);
+          // snprintf(TextFPath, sizeof(TextFPath),"text.bin");
+          res = f_open(&MyFile,TextFPath,FA_CREATE_ALWAYS|FA_WRITE);
+          if(res == FR_OK)
+          {
+            f_close(&MyFile);
+          }
+          f_open(&MyFile,TextFPath,FA_OPEN_APPEND|FA_WRITE);
+        }
+        last_state = inverter_state;
+      }      
       
       __disable_irq();
       uint8_t buf_num_to_sd = wr_log_buf_num;
@@ -624,10 +657,19 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     if(inverter_state == STATE_RUNNING)
     {
       HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_SET);
+      if(last_torque < percent_torque_requested)
+      {
+        last_torque += (float)1.0f/freq/0.1f;
+      }
+      else if (last_torque > percent_torque_requested)
+      {
+        last_torque = percent_torque_requested;
+      }
     }
     else
     {
       HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_RESET);
+      last_torque = 0.0f;
     }
     if(inverter_state == STATE_READY)
     {
@@ -661,7 +703,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     float angular_vel = cal_angular_vel(angle_now);
     float filtered_vel = LowPassFilter_operator(angular_vel,&filter);
     filtered_RPM = LowPassFilter_operator((float)dir*filtered_vel/4/2/M_PI*60,&filter_RPM);
-    float target_torque = max_torque*percent_torque_requested;
+    float target_torque = max_torque*last_torque;
     float target_Iq = target_torque/torque_constant;
     float filtered_Iabc[3] = {0.0f};
     for (int i=0;i<3;i++){
@@ -792,15 +834,18 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     log_buf[wr_log_buf_num][wr_log_index%7500].LGIW = IW_100;
     log_buf[wr_log_buf_num][wr_log_index%7500].LGTMOS = T_Report;
     log_buf[wr_log_buf_num][wr_log_index%7500].LGTMOT = T_Mot;
-    log_buf[wr_log_buf_num][wr_log_index%7500].LGSINE = ADC2_arr[0]-ADC2_arr[1];
-    log_buf[wr_log_buf_num][wr_log_index%7500].LGCOS = ADC2_arr[2]-ADC2_arr[3];
+    log_buf[wr_log_buf_num][wr_log_index%7500].LGSINE = (int16_t) roundf(Iq_controller_output*10);
+    log_buf[wr_log_buf_num][wr_log_index%7500].LGCOS = (int16_t) roundf(Iq_controller_output*10);
     log_buf[wr_log_buf_num][wr_log_index%7500].LGANG = (uint16_t) roundf(angle_now*100*180/M_PI);
-    log_buf[wr_log_buf_num][wr_log_index%7500].LGTCMD = (int16_t) roundf(percent_torque_requested*10);
+    log_buf[wr_log_buf_num][wr_log_index%7500].LGTCMD = (int16_t) roundf(percent_torque_requested*1000*1000);
     log_buf[wr_log_buf_num][wr_log_index%7500].LGSTATE = report_status;
     log_buf[wr_log_buf_num][wr_log_index%7500].LGCRC = HAL_CRC_Calculate(&hcrc,&log_buf[wr_log_buf_num][wr_log_index%7500],((sizeof(logger_t)-2)));
         
     log_subsec++;
     wr_log_index++;
+
+    
+    
 
 
     #ifdef RMSOCP
@@ -883,7 +928,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_PIN)
   }
   if(GPIO_PIN == GPIO_PIN_6)
   {
-    Enter_ERROR_State(ERROR_HW_OC);
+    // Enter_ERROR_State(ERROR_HW_OC);
   }
   if(GPIO_PIN == GPIO_PIN_5)
   {
@@ -979,6 +1024,7 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
       }
     }
   }
+  
 }
 
 void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo1ITs)
@@ -1000,7 +1046,7 @@ void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo1ITs)
         gmtime_r(&now,&now_tm);
 
         set_time(now_tm.tm_hour,now_tm.tm_min,now_tm.tm_sec);
-        set_date(now_tm.tm_year-100,now_tm.tm_mon,now_tm.tm_mday,now_tm.tm_wday);
+        set_date(now_tm.tm_year-100,now_tm.tm_mon+1,now_tm.tm_mday,now_tm.tm_wday);
         got_date = 1;
       }
       else if (RxHeader1.Identifier == 0x200)
@@ -1093,6 +1139,11 @@ void Config_Fdcan1(void)
   {
     Error_Handler();
   }
+  if (HAL_FDCAN_ActivateNotification(&hfdcan1,FDCAN_IT_RX_FIFO0_FULL,0) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  HAL_FDCAN_ConfigRxFifoOverwrite(&hfdcan1,FDCAN_RX_FIFO0,FDCAN_RX_FIFO_OVERWRITE);
   if (HAL_FDCAN_ActivateNotification(&hfdcan1,FDCAN_IT_RX_FIFO1_NEW_MESSAGE,0) != HAL_OK)
   {
     Error_Handler();
@@ -1205,7 +1256,7 @@ void set_date (uint8_t year, uint8_t month, uint8_t date, uint8_t day)  // monda
 
 void CAN_Send_Heartbeat(void)
 {
-  uint8_t HBData = 0x7f;
+  uint8_t HBData = CODE_VER;
   CAN1_SetMsg(&HeartBeatHeader,&HBData);
 }
 

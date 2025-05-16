@@ -17,8 +17,8 @@
 
 // Protections
 #define SOFTOCP 60
-#define ACAOCP 70
-#define MOVRMSOCP 25000000 //should be 10000*OCP^2
+#define ACAOCP 100
+#define MOVRMSOCP 100000000 //should be 10000*OCP^2
 #define MOS_OTP 1000 //should be 10 times otp temp in deg C
 #define MOT_OTP 1200 //should be 10 times otp temp in deg C
 #define ENC_UV 50    //should be 3~5% Encoder adc full range
@@ -26,6 +26,6 @@
 #define PID_I 0.02f
 #define PID_D 0.0f
 #define PID_RAMP 1000.0f
-#define PID_LIMIT 100000.0f
+#define PID_LIMIT 20.0f
 
 #endif

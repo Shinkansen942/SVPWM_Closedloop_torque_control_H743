@@ -14,7 +14,7 @@ float PID_operator(float error, struct PIDController* pid){
 	float proportional = pid->P * error;
 	// Tustin 散点积分（I环）
 	float integral = pid->integral_prev + pid->I*Ts*0.5f*(error + pid->error_prev);
-	integral = _constrain(integral, -pid->limit, pid->limit);
+	integral = _constrain(integral, -40, 40);
 	// D环（微分环节）
 	float derivative = pid->D*(error - pid->error_prev)/Ts;
 
