@@ -129,8 +129,8 @@ uint16_t report_DCV;
 float open_loop_timestamp=0;
 float zero_electric_angle=6.0736f;
 float shaft_angle=0;
-float voltage_limit=60;
-float voltage_power_supply=60;
+float voltage_limit=440;
+float voltage_power_supply=440;
 int period=5217; // period for the PWM
 int dir=1; // anti clockwise direction is 1 , clockwise is -1
 int pole_pairs=1;
@@ -150,7 +150,8 @@ int indexLED=0;
 int indexHeartbeat=0;
 int indexStatus=0;
 int indexTimer = 0;
-int prevSD = 0;
+uint32_t prev_new_file = 0;
+int prev_sd = 0;
 int prevWhileTest = 0;
 uint8_t got_date = 0;
 uint8_t last_got_date = 0;
@@ -160,8 +161,9 @@ float Ts=(float)1/45994;
 float angle_prev=-1.0f;
 const float torque_constant = 0.291f; //Nm/A
 const float max_torque = 25;
+const float max_current = 70;
 float percent_torque_requested = 0.0f;
-float last_torque = 0.0f;
+float last_percent = 0.0f;
 uint16_t current_offset[4];
 float current_phase[3];
 const int16_t Mot_Conv[1024] = {1361,1353,1345,1337,1329,1322,1314,1306,1298,1290,1283,1275,1267,1259,1251,1244,1236,1228,1220,1212,1205,1197,1189,1181,1173,1166,1158,1150,1142,1134,1126,1119,1111,1103,1095,1087,1080,1072,1064,1056,1048,1041,1033,1025,1017,1009,1002,994,986,978,970,963,955,947,939,931,924,916,908,900,892,885,877,869,861,853,845,838,830,822,814,806,799,791,783,775,767,760,752,744,736,728,721,713,705,697,689,682,674,666,658,650,643,635,627,619,611,604,596,588,580,572,565,557,549,541,533,525,518,510,502,494,486,479,471,463,455,447,440,432,424,416,408,401,393,385,377,369,362,354,346,338,330,323,315,307,299,291,284,276,268,260,252,245,237,229,221,213,205,198,190,182,174,166,159,151,143,135,127,120,112,104,96,88,81,73,65,57,49,42,34,26,18,10,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
@@ -179,8 +181,9 @@ int max_sprint = 0;
 int max_sdwrite = 0;
 int sd_td;
 uint32_t loop_time;
-int max_sd_buf = 0;
 #endif
+
+int max_sd_buf = 0;
 
 INV_Statustypedef inverter_state = STATE_INIT;
 INV_Errortypedef error_state = ERROR_NONE;
@@ -217,9 +220,9 @@ const char TestFPath[] = {"Test.bin"};
 char TextFPath[40];
 
 lpf_t filter= {.Tf=0.001,.y_prev=0.0f};         //Tf=1ms
-lpf_t filter_current_Iq= {.Tf=0.02,.y_prev=0.0f}; //Tf=20ms
-lpf_t filter_current_Id= {.Tf=0.02,.y_prev=0.0f}; //Tf=20ms
-lpf_t filter_current_Iabc[3] = {{.Tf = 0.002,.y_prev=0.0f},{.Tf = 0.002,.y_prev=0.0f},{.Tf = 0.002,.y_prev=0.0f}}; //Tf=2ms
+lpf_t filter_current_Iq= {.Tf=0.0002,.y_prev=0.0f}; //Tf=20ms
+lpf_t filter_current_Id= {.Tf=0.0002,.y_prev=0.0f}; //Tf=20ms
+lpf_t filter_current_Iabc[3] = {{.Tf = 0.00002,.y_prev=0.0f},{.Tf = 0.00002,.y_prev=0.0f},{.Tf = 0.00002,.y_prev=0.0f}}; //Tf=2ms
 lpf_t filter_RPM = {.Tf=0.05,.y_prev=0.0f};
 pidc_t pid_controller_current_Iq = {.P=2.0f,.I=2.5f,.D=PID_D,.output_ramp=PID_RAMP,.limit=PID_LIMIT,.error_prev=0,.output_prev=0,.integral_prev=0};
 pidc_t pid_controller_current_Id = {.P=1.2f,.I=2.5f,.D=PID_D,.output_ramp=PID_RAMP,.limit=PID_LIMIT,.error_prev=0,.output_prev=0,.integral_prev=0};
@@ -415,8 +418,14 @@ int main(void)
    
   #ifdef CAL_ZERO_ANGLE
   HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_SET);
-  setPhaseVoltage(30,0,_electricalAngle(M_PI*1.5f,pole_pairs),TIM1);
-  HAL_Delay(10000);
+  setPhaseVoltage(15,0,_electricalAngle(M_PI*1.5f,pole_pairs),TIM1);
+  for (size_t i = 0; i < 2000; i++)
+  {
+    Get_Encoder_Angle(ADC2_arr,&angle_now);
+    HAL_Delay(10);
+    SCB_InvalidateDCache_by_Addr(ADC2_arr,sizeof(ADC2_arr));
+  }
+  
   // uint16_t read_raw=read(&hspi1, SPI1_CSn_GPIO_Port,SPI1_CSn_Pin,AS5048A_ANGLE);
   float raw_angle;
   Get_Encoder_Angle(ADC2_arr,&raw_angle);
@@ -438,7 +447,7 @@ int main(void)
   HAL_RTC_GetDate(&hrtc,&log_date,RTC_FORMAT_BIN);
   HAL_RTC_GetTime(&hrtc,&log_time,RTC_FORMAT_BIN);  
 
-  snprintf(TextFPath, sizeof(TextFPath),"%04d%02d%02d_%02d%02d%02d_INIT.bin",(int)log_date.Year+2000,(int)log_date.Month,(int)log_date.Date,(int)log_time.Hours,(int)log_time.Minutes,(int)log_time.Seconds);
+  snprintf(TextFPath, sizeof(TextFPath),"%04d%02d%02d_%02d%02d%02d.bin",(int)log_date.Year+2000,(int)log_date.Month,(int)log_date.Date,(int)log_time.Hours,(int)log_time.Minutes,(int)log_time.Seconds);
   // snprintf(TextFPath, sizeof(TextFPath),"text.bin");
   res = f_open(&MyFile,TextFPath,FA_CREATE_ALWAYS|FA_WRITE);
   if(res == FR_OK)
@@ -459,7 +468,8 @@ int main(void)
   HAL_GPIO_WritePin(LED_D11_GPIO_Port,LED_D11_Pin,GPIO_PIN_SET);
   HAL_TIM_Base_Start_IT(&htim1); 
   HAL_TIM_Base_Start_IT(&htim3);
-  prevSD = __HAL_TIM_GET_COUNTER(&htim2);
+  prev_sd = __HAL_TIM_GET_COUNTER(&htim2);
+  prev_new_file = __HAL_TIM_GET_COUNTER(&htim2);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -472,7 +482,20 @@ int main(void)
     /* USER CODE BEGIN 3 */
     volatile int sd_now = __HAL_TIM_GET_COUNTER(&htim2);
     // uint32_t whileTest = sd_now;
-    if (sd_now - prevSD >= 1000)
+    if (sd_now - prev_new_file >= 3000000)
+    {
+      f_close(&MyFile);
+      snprintf(TextFPath, sizeof(TextFPath),"%04d%02d%02d_%02d%02d%02d.bin",(int)log_date.Year+2000,(int)log_date.Month,(int)log_date.Date,(int)log_time.Hours,(int)log_time.Minutes,(int)log_time.Seconds);
+      // snprintf(TextFPath, sizeof(TextFPath),"text.bin");
+      res = f_open(&MyFile,TextFPath,FA_CREATE_ALWAYS|FA_WRITE);
+      if(res == FR_OK)
+      {
+        f_close(&MyFile);
+      }
+      f_open(&MyFile,TextFPath,FA_OPEN_APPEND|FA_WRITE);
+      prev_new_file = sd_now;
+    }    
+    if (sd_now - prev_sd >= 1000)
     {
       HAL_GPIO_WritePin(LED_D11_GPIO_Port,LED_D11_Pin,GPIO_PIN_RESET);
 
@@ -488,34 +511,7 @@ int main(void)
         }
         f_open(&MyFile,TextFPath,FA_OPEN_APPEND|FA_WRITE);
       }
-      if(last_state != inverter_state)
-      {
-        if (inverter_state == STATE_RUNNING)
-        {
-          f_close(&MyFile);
-          snprintf(TextFPath, sizeof(TextFPath),"%04d%02d%02d_%02d%02d%02d_EN.bin",(int)log_date.Year+2000,(int)log_date.Month,(int)log_date.Date,(int)log_time.Hours,(int)log_time.Minutes,(int)log_time.Seconds);
-          // snprintf(TextFPath, sizeof(TextFPath),"text.bin");
-          res = f_open(&MyFile,TextFPath,FA_CREATE_ALWAYS|FA_WRITE);
-          if(res == FR_OK)
-          {
-            f_close(&MyFile);
-          }
-          f_open(&MyFile,TextFPath,FA_OPEN_APPEND|FA_WRITE);
-        }
-        else if (inverter_state == STATE_READY || inverter_state == STATE_ERROR)
-        {
-          f_close(&MyFile);
-          snprintf(TextFPath, sizeof(TextFPath),"%04d%02d%02d_%02d%02d%02d_DEN.bin",(int)log_date.Year+2000,(int)log_date.Month,(int)log_date.Date,(int)log_time.Hours,(int)log_time.Minutes,(int)log_time.Seconds);
-          // snprintf(TextFPath, sizeof(TextFPath),"text.bin");
-          res = f_open(&MyFile,TextFPath,FA_CREATE_ALWAYS|FA_WRITE);
-          if(res == FR_OK)
-          {
-            f_close(&MyFile);
-          }
-          f_open(&MyFile,TextFPath,FA_OPEN_APPEND|FA_WRITE);
-        }
-        last_state = inverter_state;
-      }      
+            
       
       __disable_irq();
       uint8_t buf_num_to_sd = wr_log_buf_num;
@@ -540,12 +536,19 @@ int main(void)
       {
         max_sdwrite = sd_td;
       }      
-      prevSD = sd_now;
+      prev_sd = sd_now;
       #endif
 
       HAL_GPIO_WritePin(LED_D11_GPIO_Port,LED_D11_Pin,GPIO_PIN_SET);
     }
-    
+    if (sd_now - prev_sd < 0)
+    {
+      prev_sd = sd_now;
+    }
+    if (sd_now - prev_new_file >= 3000000)
+    {
+      prev_new_file = sd_now;
+    }
   }
   /* USER CODE END 3 */
 }
@@ -656,20 +659,20 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     SCB_InvalidateDCache_by_Addr(ADC3_arr,sizeof(ADC3_arr));
     if(inverter_state == STATE_RUNNING)
     {
+      if(last_percent < percent_torque_requested)
+      {
+        last_percent += (float)1.0f/freq/RAMP_TIME;
+      }
+      else if (last_percent > percent_torque_requested)
+      {
+        last_percent = percent_torque_requested;
+      }
       HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_SET);
-      if(last_torque < percent_torque_requested)
-      {
-        last_torque += (float)1.0f/freq/0.1f;
-      }
-      else if (last_torque > percent_torque_requested)
-      {
-        last_torque = percent_torque_requested;
-      }
     }
     else
     {
+      last_percent = 0.0f;
       HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_RESET);
-      last_torque = 0.0f;
     }
     if(inverter_state == STATE_READY)
     {
@@ -697,14 +700,15 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         Enter_ERROR_State(ERROR_ENC);
       }
     }
+    angle_now = _normalizeAngle(angle_now);
     
     voltage_power_supply = (float)ADC3_arr[0]*DCVPLSB;
     voltage_limit = voltage_power_supply;
     float angular_vel = cal_angular_vel(angle_now);
     float filtered_vel = LowPassFilter_operator(angular_vel,&filter);
     filtered_RPM = LowPassFilter_operator((float)dir*filtered_vel/4/2/M_PI*60,&filter_RPM);
-    float target_torque = max_torque*last_torque;
-    float target_Iq = target_torque/torque_constant;
+    // float target_torque = max_torque*last_percent;
+    float target_Iq = max_torque*last_percent;
     float filtered_Iabc[3] = {0.0f};
     for (int i=0;i<3;i++){
        	current_phase[i] =(float) (ADC1_arr[i]-current_offset[i])*ACAPLSB;
@@ -835,7 +839,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     log_buf[wr_log_buf_num][wr_log_index%7500].LGTMOS = T_Report;
     log_buf[wr_log_buf_num][wr_log_index%7500].LGTMOT = T_Mot;
     log_buf[wr_log_buf_num][wr_log_index%7500].LGSINE = (int16_t) roundf(Iq_controller_output*10);
-    log_buf[wr_log_buf_num][wr_log_index%7500].LGCOS = (int16_t) roundf(Iq_controller_output*10);
+    log_buf[wr_log_buf_num][wr_log_index%7500].LGCOS = (int16_t) roundf(Id_controller_output*10);
     log_buf[wr_log_buf_num][wr_log_index%7500].LGANG = (uint16_t) roundf(angle_now*100*180/M_PI);
     log_buf[wr_log_buf_num][wr_log_index%7500].LGTCMD = (int16_t) roundf(percent_torque_requested*1000*1000);
     log_buf[wr_log_buf_num][wr_log_index%7500].LGSTATE = report_status;
@@ -928,7 +932,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_PIN)
   }
   if(GPIO_PIN == GPIO_PIN_6)
   {
-    // Enter_ERROR_State(ERROR_HW_OC);
+    Enter_ERROR_State(ERROR_HW_OC);
   }
   if(GPIO_PIN == GPIO_PIN_5)
   {
@@ -959,21 +963,28 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
       {
         int16_t torque_command;
         control = RxData1[0] | (uint16_t)RxData1[1] << 8;
-        // enable
-        if(control & CTRL_ENABLE && inverter_state == STATE_READY && HAL_GPIO_ReadPin(GATE_Ready_GPIO_Port,GATE_Ready_Pin) == GPIO_PIN_SET)
+        if(inverter_state != STATE_ERROR)
         {
-          inverter_state = STATE_RUNNING;
-          percent_torque_requested = 0;
-          HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_SET);
-        // disable
-        }else if(!(control & CTRL_ENABLE) && inverter_state == STATE_RUNNING) 
-        {
-          inverter_state = STATE_READY;
-          percent_torque_requested = 0;
-          HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_RESET);
+          // enable
+          if(control & CTRL_ENABLE && inverter_state == STATE_READY && HAL_GPIO_ReadPin(GATE_Ready_GPIO_Port,GATE_Ready_Pin) == GPIO_PIN_SET)
+          {
+            inverter_state = STATE_RUNNING;
+            percent_torque_requested = 0;
+            HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_SET);
+          // disable
+          }else if(!(control & CTRL_ENABLE) && inverter_state == STATE_RUNNING) 
+          {
+            inverter_state = STATE_READY;
+            percent_torque_requested = 0;
+            HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_RESET);
+          }
+          else
+          {
+            HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_RESET);
+          }
         }
         // fault reset
-        if(CTRL_FAULT_RESET && !(control & CTRL_FAULT_RESET) && inverter_state == STATE_ERROR) 
+        if((control & CTRL_FAULT_RESET) && inverter_state == STATE_ERROR) 
         {
           inverter_state = STATE_READY;
           error_state = ERROR_NONE;

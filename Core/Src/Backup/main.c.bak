@@ -149,7 +149,7 @@ int indexLED=0;
 int indexHeartbeat=0;
 int indexStatus=0;
 int indexTimer = 0;
-int prevSD = 0;
+int prev_sd = 0;
 int prevWhileTest = 0;
 uint8_t got_date = 0;
 uint8_t last_got_date = 0;
@@ -456,7 +456,7 @@ int main(void)
   HAL_GPIO_WritePin(LED_D11_GPIO_Port,LED_D11_Pin,GPIO_PIN_SET);
   HAL_TIM_Base_Start_IT(&htim1); 
   HAL_TIM_Base_Start_IT(&htim3);
-  prevSD = __HAL_TIM_GET_COUNTER(&htim2);
+  prev_sd = __HAL_TIM_GET_COUNTER(&htim2);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -469,7 +469,7 @@ int main(void)
     /* USER CODE BEGIN 3 */
     volatile int sd_now = __HAL_TIM_GET_COUNTER(&htim2);
     // uint32_t whileTest = sd_now;
-    if (sd_now - prevSD >= 1000)
+    if (sd_now - prev_sd >= 1000)
     {
       HAL_GPIO_WritePin(LED_D11_GPIO_Port,LED_D11_Pin,GPIO_PIN_RESET);
 
@@ -511,7 +511,7 @@ int main(void)
       {
         max_sdwrite = sd_td;
       }      
-      prevSD = sd_now;
+      prev_sd = sd_now;
       #endif
 
       HAL_GPIO_WritePin(LED_D11_GPIO_Port,LED_D11_Pin,GPIO_PIN_SET);

@@ -3,20 +3,21 @@
 
 // Code Config Options
 // #define SDDEBUG           //undefine to disable debug
-// #define CAL_ZERO_ANGLE  //undefine to disable zero electrical angle calibration
-#define TIMING          //undefine to disable loop timing
+#define CAL_ZERO_ANGLE  //undefine to disable zero electrical angle calibration
+// #define TIMING          //undefine to disable loop timing
 #define CAN_OT_FAULT    //undefine to disable CAN OVERTIME Falut
 #define RMSOCP          //undefine to disable RMS overcurrent protection
 // #define WAIT_GATE_READY //undefine to not wait for gate ready signal
-#define OVERRIDE_OCP    //define to enable hardware ocp override
+// #define OVERRIDE_OCP    //define to enable hardware ocp override
 #define CAN_CONFIG      //define to enable use CAN to change variables
 // #define SIXSTEP         //define to enable six step comutation
+// #define VQ_LEQ_0        //define to use Vq less than 0
 
 // Motor number
 #define MOT_RR
 
 // Protections
-#define SOFTOCP 60
+#define SOFTOCP 90
 #define ACAOCP 100
 #define MOVRMSOCP 100000000 //should be 10000*OCP^2
 #define MOS_OTP 1000 //should be 10 times otp temp in deg C
@@ -27,5 +28,6 @@
 #define PID_D 0.0f
 #define PID_RAMP 1000.0f
 #define PID_LIMIT 20.0f
+#define RAMP_TIME 0.1f
 
 #endif
