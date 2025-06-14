@@ -101,11 +101,15 @@ void setPwm(float Ua, float Ub, float Uc, TIM_TypeDef * TIM_BASE) {
 
 void setPhaseVoltage(float Uq,float Ud, float angle_el, TIM_TypeDef * TIM_BASE) {
   angle_el = _normalizeAngle(angle_el + zero_electric_angle);
-  // if (Uq <0 ){
-	//   angle_el+=M_PI;
-	//   Uq=fabsf(Uq);
-  // }
-  // angle_el =  _normalizeAngle (angle_el+M_PI/2);
+  
+  #ifdef VQ_LEQ_0
+  if (Uq <0 ){
+	  angle_el+=M_PI;
+	  Uq=fabsf(Uq);
+  }
+  angle_el =  _normalizeAngle (angle_el+M_PI/2);
+  #endif
+
   // int sector = floor(angle_el / M_PI*3) + 1;
   // calculate the duty cycles
   float sa;
