@@ -145,6 +145,7 @@ float Ia;
 float Iq_controller_output;
 float Id_controller_output;
 float Ia_controller_output;
+int enable_hw_oc = 0;
 
 int indexLED=0;
 int indexHeartbeat=0;
@@ -667,12 +668,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
       {
         last_percent = percent_torque_requested;
       }
-      HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_SET);
+      // HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_SET);
     }
     else
     {
       last_percent = 0.0f;
-      HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_RESET);
+      // HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_RESET);
     }
     if(inverter_state == STATE_READY)
     {
@@ -766,7 +767,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
       {
         HAL_GPIO_WritePin(LED_D10_GPIO_Port,LED_D10_Pin,GPIO_PIN_SET);
         HAL_GPIO_WritePin(LED_D13_GPIO_Port,LED_D13_Pin,GPIO_PIN_RESET);
-        error_state = ERROR_NONE;
+        // error_state = ERROR_NONE;
       }
       else if(inverter_state == STATE_ERROR)
       {
@@ -883,6 +884,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     //CAN fault detect
     if(CAN_Timer == freq && inverter_state == STATE_RUNNING)
     {
+      enable_hw_oc = 0;
       HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_RESET);
       inverter_state = STATE_READY;
     }
@@ -932,7 +934,10 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_PIN)
   }
   if(GPIO_PIN == GPIO_PIN_6)
   {
-    Enter_ERROR_State(ERROR_HW_OC);
+    if (inverter_state == STATE_RUNNING)
+    {
+      Enter_ERROR_State(ERROR_HW_OC);
+    }     
   }
   if(GPIO_PIN == GPIO_PIN_5)
   {
@@ -970,16 +975,19 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
           {
             inverter_state = STATE_RUNNING;
             percent_torque_requested = 0;
+            enable_hw_oc = 1;
             HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_SET);
           // disable
           }else if(!(control & CTRL_ENABLE) && inverter_state == STATE_RUNNING) 
           {
             inverter_state = STATE_READY;
             percent_torque_requested = 0;
+            enable_hw_oc = 0;
             HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_RESET);
           }
           else
           {
+            enable_hw_oc = 0;
             HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_RESET);
           }
         }
@@ -1170,6 +1178,7 @@ void Enter_ERROR_State(INV_Errortypedef error)
 {
   inverter_state = STATE_ERROR;
   error_state = error;
+  enable_hw_oc = 0;
   HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_RESET);
 }
 
