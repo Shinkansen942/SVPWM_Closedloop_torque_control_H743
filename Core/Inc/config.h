@@ -3,7 +3,7 @@
 
 // Code Config Options
 // #define SDDEBUG           //undefine to disable debug
-#define CAL_ZERO_ANGLE  //undefine to disable zero electrical angle calibration
+// #define CAL_ZERO_ANGLE  //undefine to disable zero electrical angle calibration
 // #define TIMING          //undefine to disable loop timing
 #define CAN_OT_FAULT    //undefine to disable CAN OVERTIME Falut
 #define RMSOCP          //undefine to disable RMS overcurrent protection
@@ -28,6 +28,12 @@
 #define PID_D 0.0f
 #define PID_RAMP 1000.0f
 #define PID_LIMIT 20.0f
-#define RAMP_TIME 0.1f
+#define RAMP_TIME 1.0f
+#define HW_OC_TIME 4600 //should be in pwm cycles, 4600 is 100ms
 
+#ifdef CAL_ZERO_ANGLE
+#define ZERO_ELECTRIC_ANGLE 0.0f //should be in radians
+#else
+#define ZERO_ELECTRIC_ANGLE 5.65f //should be in radians
+#endif
 #endif

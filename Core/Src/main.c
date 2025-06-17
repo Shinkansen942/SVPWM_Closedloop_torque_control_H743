@@ -117,6 +117,10 @@ int16_t RMS_buf[3][10000] = {{0}};
 uint32_t RMS_sum[3] = {0};
 uint16_t indexRMS = 0;
 
+uint8_t oc_buf[HW_OC_TIME] = {0};
+uint16_t oc_index = 0;
+uint16_t oc_sum = 0;
+
 int16_t T_Report=0;
 int16_t T_Mot = 0;
 int16_t T_MCU = 0;
@@ -127,7 +131,7 @@ uint16_t report_DCV;
 
 //FOC variables
 float open_loop_timestamp=0;
-float zero_electric_angle=6.0736f;
+float zero_electric_angle=ZERO_ELECTRIC_ANGLE;
 float shaft_angle=0;
 float voltage_limit=440;
 float voltage_power_supply=440;
@@ -419,7 +423,7 @@ int main(void)
    
   #ifdef CAL_ZERO_ANGLE
   HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_SET);
-  setPhaseVoltage(15,0,_electricalAngle(M_PI*1.5f,pole_pairs),TIM1);
+  setPhaseVoltage(25,0,_electricalAngle(M_PI*1.5f,pole_pairs),TIM1);
   for (size_t i = 0; i < 2000; i++)
   {
     Get_Encoder_Angle(ADC2_arr,&angle_now);
@@ -429,6 +433,7 @@ int main(void)
   
   // uint16_t read_raw=read(&hspi1, SPI1_CSn_GPIO_Port,SPI1_CSn_Pin,AS5048A_ANGLE);
   float raw_angle;
+  SCB_InvalidateDCache_by_Addr(ADC2_arr,sizeof(ADC2_arr));
   Get_Encoder_Angle(ADC2_arr,&raw_angle);
   zero_electric_angle=_electricalAngle(raw_angle,pole_pairs);
   setPhaseVoltage(0,0,_electricalAngle(M_PI*1.5f,pole_pairs),TIM1);
@@ -668,12 +673,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
       {
         last_percent = percent_torque_requested;
       }
-      // HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_SET);
+      HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_SET);
     }
     else
     {
       last_percent = 0.0f;
-      // HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_RESET);
+      HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_RESET);
     }
     if(inverter_state == STATE_READY)
     {
@@ -709,7 +714,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     float filtered_vel = LowPassFilter_operator(angular_vel,&filter);
     filtered_RPM = LowPassFilter_operator((float)dir*filtered_vel/4/2/M_PI*60,&filter_RPM);
     // float target_torque = max_torque*last_percent;
-    float target_Iq = max_torque*last_percent;
+    float target_Iq = max_current*last_percent;
     float filtered_Iabc[3] = {0.0f};
     for (int i=0;i<3;i++){
        	current_phase[i] =(float) (ADC1_arr[i]-current_offset[i])*ACAPLSB;
@@ -849,9 +854,21 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     log_subsec++;
     wr_log_index++;
 
-    
-    
-
+    if(inverter_state == STATE_RUNNING)
+    {
+      oc_sum -= oc_buf[oc_index];
+      oc_buf[oc_index] = HAL_GPIO_ReadPin(OC_Fault_GPIO_Port,OC_Fault_Pin);
+      oc_sum += oc_buf[oc_index];
+      if (oc_sum > HW_OC_TIME/2)
+      {
+        Enter_ERROR_State(ERROR_HW_OC);
+      }
+    }
+    oc_index++;
+    if(oc_index == HW_OC_TIME)
+    {
+      oc_index = 0;
+    }
 
     #ifdef RMSOCP
     //Moving RMS for phase currents
@@ -976,6 +993,12 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
             inverter_state = STATE_RUNNING;
             percent_torque_requested = 0;
             enable_hw_oc = 1;
+            for (size_t i = 0; i < HW_OC_TIME; i++)
+            {
+              oc_buf[i] = 0;
+            }
+            oc_sum = 0;
+            oc_index = 0;
             HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_SET);
           // disable
           }else if(!(control & CTRL_ENABLE) && inverter_state == STATE_RUNNING) 
@@ -1276,7 +1299,7 @@ void set_date (uint8_t year, uint8_t month, uint8_t date, uint8_t day)  // monda
 
 void CAN_Send_Heartbeat(void)
 {
-  uint8_t HBData = CODE_VER;
+  uint8_t HBData = error_state;
   CAN1_SetMsg(&HeartBeatHeader,&HBData);
 }
 
