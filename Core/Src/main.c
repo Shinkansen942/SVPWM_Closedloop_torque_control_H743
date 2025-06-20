@@ -117,7 +117,7 @@ int16_t RMS_buf[3][10000] = {{0}};
 uint32_t RMS_sum[3] = {0};
 uint16_t indexRMS = 0;
 
-uint8_t oc_buf[HW_OC_TIME] = {0};
+__attribute__((section("._RAM_D2_Area"))) uint8_t oc_buf[HW_OC_TIME] = {0};
 uint16_t oc_index = 0;
 uint16_t oc_sum = 0;
 
@@ -139,7 +139,7 @@ int period=5217; // period for the PWM
 int dir=1; // anti clockwise direction is 1 , clockwise is -1
 int pole_pairs=1;
 float angle_now;
-const float ACAPLSB = -0.0515718f;   // ACAPLSB = 3.3/15.626e-3/adc1_range
+const float ACAPLSB = -0.1031436f;   // ACAPLSB = 3.3/15.626e-3/adc1_range
 const float omega_fieldweaking = 3000.0f;
 float filtered_RPM;
 // int int_RPM;
@@ -857,7 +857,14 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     if(inverter_state == STATE_RUNNING)
     {
       oc_sum -= oc_buf[oc_index];
-      oc_buf[oc_index] = HAL_GPIO_ReadPin(OC_Fault_GPIO_Port,OC_Fault_Pin);
+      if (HAL_GPIO_ReadPin(OC_Fault_GPIO_Port,OC_Fault_Pin) == GPIO_PIN_RESET)
+      {
+        oc_buf[oc_index] = 1;
+      }
+      else
+      {
+        oc_buf[oc_index] = 0;
+      }
       oc_sum += oc_buf[oc_index];
       if (oc_sum > HW_OC_TIME/2)
       {
@@ -953,7 +960,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_PIN)
   {
     if (inverter_state == STATE_RUNNING)
     {
-      Enter_ERROR_State(ERROR_HW_OC);
+      // Enter_ERROR_State(ERROR_HW_OC);
     }     
   }
   if(GPIO_PIN == GPIO_PIN_5)

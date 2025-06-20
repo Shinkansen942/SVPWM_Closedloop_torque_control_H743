@@ -17,8 +17,8 @@
 #define MOT_RR
 
 // Protections
-#define SOFTOCP 90
-#define ACAOCP 100
+#define SOFTOCP 70
+#define ACAOCP 80
 #define MOVRMSOCP 100000000 //should be 10000*OCP^2
 #define MOS_OTP 1000 //should be 10 times otp temp in deg C
 #define MOT_OTP 1200 //should be 10 times otp temp in deg C
