@@ -10,6 +10,10 @@ float LowPassFilter_operator(float x, struct LowPassFilter* filter){
 	float dt=Ts;
 	float alpha = filter->Tf/(filter->Tf + dt);
 	float y = alpha*filter->y_prev + (1.0f - alpha)*x;
-	filter->y_prev = y;
+	if (y == y)
+	{
+		filter->y_prev = y; // Update the previous value only if y is a valid number
+	}
+	
 	return y;
 }
