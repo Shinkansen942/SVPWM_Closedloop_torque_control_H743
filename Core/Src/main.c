@@ -94,7 +94,7 @@ void set_date (uint8_t year, uint8_t month, uint8_t date, uint8_t day);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-volatile int code_ver = 0;
+volatile int code_ver = 5;
 
 char data[500];
 __attribute__((section("._RAM_Area"))) static char tdata[500];
@@ -121,6 +121,10 @@ __attribute__((section("._RAM_D2_Area"))) uint8_t oc_buf[HW_OC_TIME] = {0};
 uint16_t oc_index = 0;
 uint16_t oc_sum = 0;
 
+__attribute__((section("._RAM_D2_Area"))) uint8_t soft_oc_buf[HW_OC_TIME] = {0};
+uint16_t soft_oc_index = 0;
+uint16_t soft_oc_sum = 0;
+
 int16_t T_Report=0;
 int16_t T_Mot = 0;
 int16_t T_MCU = 0;
@@ -137,6 +141,7 @@ float voltage_limit=440;
 float voltage_power_supply=440;
 int period=5217; // period for the PWM
 int dir=1; // anti clockwise direction is 1 , clockwise is -1
+// int dir = DIR; // anti clockwise direction is 1 , clockwise is -1
 int pole_pairs=1;
 float angle_now;
 const float ACAPLSB = -0.1031436f;   // ACAPLSB = 3.3/15.626e-3/adc1_range
@@ -224,9 +229,9 @@ int CAN_Timer = 0;
 const char TestFPath[] = {"Test.bin"};
 char TextFPath[40];
 
-lpf_t filter= {.Tf=0.001,.y_prev=0.0f};         //Tf=1ms
-lpf_t filter_current_Iq= {.Tf=0.0002,.y_prev=0.0f}; //Tf=20ms
-lpf_t filter_current_Id= {.Tf=0.0002,.y_prev=0.0f}; //Tf=20ms
+lpf_t filter= {.Tf=0.00002,.y_prev=0.0f};         //Tf=1ms
+lpf_t filter_current_Iq= {.Tf=0.002,.y_prev=0.0f}; //Tf=20ms
+lpf_t filter_current_Id= {.Tf=0.002,.y_prev=0.0f}; //Tf=20ms
 lpf_t filter_current_Iabc[3] = {{.Tf = 0.00002,.y_prev=0.0f},{.Tf = 0.00002,.y_prev=0.0f},{.Tf = 0.00002,.y_prev=0.0f}}; //Tf=2ms
 lpf_t filter_RPM = {.Tf=0.05,.y_prev=0.0f};
 pidc_t pid_controller_current_Iq = {.P=2.0f,.I=2.5f,.D=PID_D,.output_ramp=PID_RAMP,.limit=PID_LIMIT,.error_prev=0,.output_prev=0,.integral_prev=0};
@@ -402,7 +407,7 @@ int main(void)
   // HAL_MDMA_Start_IT(&hmdma_mdma_channel2_dma1_stream4_tc_0,(uint32_t)tmp_ADC3_arr,(uint32_t)ADC3_arr,12,1);
   // HAL_ADC_Start_IT(&hadc3);
 
-  HAL_GPIO_WritePin(Motor_Enable_GPIO_Port, Motor_Enable_Pin, GPIO_PIN_SET);
+  // HAL_GPIO_WritePin(Motor_Enable_GPIO_Port, Motor_Enable_Pin, GPIO_PIN_SET);
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
@@ -411,7 +416,7 @@ int main(void)
   HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_3);
   HAL_Delay(1000);
   calibrateOffsets(current_offset,ADC1_arr);
-  HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_RESET);
+  // HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_RESET);
 
   //Wait for GATE READY Signal
   #ifdef WAIT_GATE_READY
@@ -422,19 +427,25 @@ int main(void)
   #endif
    
   #ifdef CAL_ZERO_ANGLE
+  float angle_integrate = 0.0f;
   HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_SET);
-  setPhaseVoltage(25,0,_electricalAngle(M_PI*1.5f,pole_pairs),TIM1);
+  setPhaseVoltage(35,0,_electricalAngle(M_PI*1.5f,pole_pairs),TIM1);
   for (size_t i = 0; i < 2000; i++)
   {
     Get_Encoder_Angle(ADC2_arr,&angle_now);
     HAL_Delay(10);
     SCB_InvalidateDCache_by_Addr(ADC2_arr,sizeof(ADC2_arr));
+    if (i >= 1500)
+    {
+      angle_integrate += angle_now;
+    }
   }
   
   // uint16_t read_raw=read(&hspi1, SPI1_CSn_GPIO_Port,SPI1_CSn_Pin,AS5048A_ANGLE);
   float raw_angle;
   SCB_InvalidateDCache_by_Addr(ADC2_arr,sizeof(ADC2_arr));
   Get_Encoder_Angle(ADC2_arr,&raw_angle);
+  raw_angle = angle_integrate/500.0f;
   zero_electric_angle=_electricalAngle(raw_angle,pole_pairs);
   setPhaseVoltage(0,0,_electricalAngle(M_PI*1.5f,pole_pairs),TIM1);
   HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_RESET);
@@ -699,6 +710,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     
 
     Get_Encoder_Angle(ADC2_arr,&angle_now);
+    if(angle_now != angle_now)
+    {
+      Enter_ERROR_State(ERROR_ENC);
+    }
     for (size_t i = 0; i < 4; i++)
     {
       if(ADC2_arr[i] < ENC_UV)
@@ -710,20 +725,44 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     
     voltage_power_supply = (float)ADC3_arr[0]*DCVPLSB;
     voltage_limit = voltage_power_supply;
+    // float filtered_angle = LowPassFilter_operator(angle_now,&filter);
     float angular_vel = cal_angular_vel(angle_now);
-    float filtered_vel = LowPassFilter_operator(angular_vel,&filter);
-    filtered_RPM = LowPassFilter_operator((float)dir*filtered_vel/4/2/M_PI*60,&filter_RPM);
+    filtered_RPM = LowPassFilter_operator((float)dir*angular_vel/4/2/M_PI*60,&filter_RPM);
     // float target_torque = max_torque*last_percent;
     float target_Iq = max_current*last_percent;
     float filtered_Iabc[3] = {0.0f};
+    int8_t soft_oc_detected = 0;
     for (int i=0;i<3;i++){
        	current_phase[i] =(float) (ADC1_arr[i]-current_offset[i])*ACAPLSB;
         //OCP
         filtered_Iabc[i] = LowPassFilter_operator(current_phase[i],&filter_current_Iabc[i]);
         if (filtered_Iabc[i] > ACAOCP||current_phase[i] < -ACAOCP)
         {
-          Enter_ERROR_State(ERROR_INSTANT_OC);
+          soft_oc_detected = 1;
         }
+        current_phase[i] = filtered_Iabc[i];
+    }
+    soft_oc_sum -= soft_oc_buf[soft_oc_index];
+    if (soft_oc_detected)
+    {
+      soft_oc_buf[soft_oc_index] = 1;
+    }
+    else
+    {
+      soft_oc_buf[soft_oc_index] = 0;
+    }
+    soft_oc_sum += soft_oc_buf[soft_oc_index];
+    if (soft_oc_sum > SOFT_OC_TIME/2)
+    {
+      if (inverter_state == STATE_RUNNING)
+      {
+        Enter_ERROR_State(ERROR_INSTANT_OC);
+      }    
+    }
+    soft_oc_index++;
+    if(oc_index == SOFT_OC_TIME)
+    {
+      soft_oc_index = 0;
     }
 
     pid_controller_current_Ia.limit = voltage_limit;
@@ -842,8 +881,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     log_buf[wr_log_buf_num][wr_log_index%7500].LGIU = IU_100;
     log_buf[wr_log_buf_num][wr_log_index%7500].LGIV = IV_100;
     log_buf[wr_log_buf_num][wr_log_index%7500].LGIW = IW_100;
-    log_buf[wr_log_buf_num][wr_log_index%7500].LGTMOS = T_Report;
-    log_buf[wr_log_buf_num][wr_log_index%7500].LGTMOT = T_Mot;
+    log_buf[wr_log_buf_num][wr_log_index%7500].LGTMOS = ADC3_arr[0]-ADC3_arr[1];
+    log_buf[wr_log_buf_num][wr_log_index%7500].LGTMOT = ADC3_arr[2]-ADC3_arr[3];;
     log_buf[wr_log_buf_num][wr_log_index%7500].LGSINE = (int16_t) roundf(Iq_controller_output*10);
     log_buf[wr_log_buf_num][wr_log_index%7500].LGCOS = (int16_t) roundf(Id_controller_output*10);
     log_buf[wr_log_buf_num][wr_log_index%7500].LGANG = (uint16_t) roundf(angle_now*100*180/M_PI);
@@ -1006,6 +1045,14 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
             }
             oc_sum = 0;
             oc_index = 0;
+            soft_oc_sum = 0;
+            soft_oc_index = 0;
+            for (size_t i = 0; i < SOFT_OC_TIME; i++)
+            {
+              /* code */
+              soft_oc_buf[i] = 0;
+            }
+            
             HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_SET);
           // disable
           }else if(!(control & CTRL_ENABLE) && inverter_state == STATE_RUNNING) 
@@ -1030,6 +1077,7 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
         torque_command = RxData1[2] | RxData1[3] << 8;
         percent_torque_requested = (float)torque_command/1000;
         CAN_Timer = 0;
+        soft_oc_sum = 0;
       }
       else if(RxHeader1.Identifier == 0x100)
       {
@@ -1106,11 +1154,11 @@ void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo1ITs)
         switch (RxData1[0])
         {
         case 0x1:
-          pid_controller_current_Iq.P = val;
+          zero_electric_angle = val;
           break;
 
         case 0x2:
-          pid_controller_current_Iq.I = val;
+          dir = val;
           break;
         
         case 0x11:
@@ -1210,6 +1258,13 @@ void Enter_ERROR_State(INV_Errortypedef error)
   error_state = error;
   enable_hw_oc = 0;
   HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_RESET);
+  LowPassFilter_reset(&filter_current_Iabc[0]);
+  LowPassFilter_reset(&filter_current_Iabc[1]);
+  LowPassFilter_reset(&filter_current_Iabc[2]);
+  LowPassFilter_reset(&filter_current_Iq);
+  LowPassFilter_reset(&filter_current_Id);
+  LowPassFilter_reset(&filter_RPM);
+  LowPassFilter_reset(&filter);
 }
 
 float MCU_MapValue(uint16_t in_value, float in_min, float in_max, float out_min, float out_max)

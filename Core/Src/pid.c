@@ -31,15 +31,18 @@ float PID_operator(float error, struct PIDController* pid){
 			output = pid->output_prev - pid->output_ramp*Ts;
 	}
 	// 保存值（为了下一次循环）
-	if (output == pid->limit || output == -pid->limit)
+	if(output == output)
 	{
-		pid->integral_prev = pid->integral_prev;;
+		if (output == pid->limit || output == -pid->limit)
+		{
+			pid->integral_prev = pid->integral_prev;;
+		}
+		else
+		{
+			pid->integral_prev = integral;
+		}	
+		pid->output_prev = output;
 	}
-	else
-	{
-		pid->integral_prev = integral;
-	}	
-	pid->output_prev = output;
 	pid->error_prev = error;
 //	pid->timestamp_prev = timestamp_now;
 	return output;

@@ -17,3 +17,9 @@ float LowPassFilter_operator(float x, struct LowPassFilter* filter){
 	
 	return y;
 }
+
+void LowPassFilter_reset(lpf_t* filter)
+{
+	filter->y_prev = 0.0f; // Reset the previous value to zero
+	// filter->timestamp_prev = 0; // Reset the timestamp if needed
+}
