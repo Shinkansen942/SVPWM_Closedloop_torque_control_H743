@@ -133,6 +133,8 @@ int16_t T_V;
 int16_t T_W;
 uint16_t report_DCV;
 
+float open_loop_rpm_var = OPEN_LOOP_RPM;
+
 //FOC variables
 float open_loop_timestamp=0;
 float zero_electric_angle=ZERO_ELECTRIC_ANGLE;
@@ -429,7 +431,7 @@ int main(void)
   #ifdef CAL_ZERO_ANGLE
   float angle_integrate = 0.0f;
   HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_SET);
-  setPhaseVoltage(35,0,_electricalAngle(M_PI*1.5f,pole_pairs),TIM1);
+  setPhaseVoltage(25,0,_electricalAngle(M_PI*1.5f,pole_pairs),TIM1);
   for (size_t i = 0; i < 2000; i++)
   {
     Get_Encoder_Angle(ADC2_arr,&angle_now);
@@ -788,11 +790,18 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     {
       IqOC_controller_output = _constrain(PID_operator(-SOFTOCP-Ia,&pid_controller_current_OCP),0,-Iq_controller_output);
     }
+    #ifdef OPEN_LOOP_SPEED
+    static float last_angle;
+    angle_now = _normalizeAngle(last_angle + open_loop_rpm_var/ 60.0f / freq * 2 * M_PI * pole_pairs);
+    last_angle = angle_now;
+    setPhaseVoltage(5, 0, _electricalAngle(angle_now, pole_pairs)+OFFSET_ANGLE,TIM1);
     
+    #else
 
     // setPhaseVoltage(_constrain(Iq_controller_output+IqOC_controller_output,-voltage_power_supply/2,voltage_power_supply/2),  _constrain(Id_controller_output,-voltage_power_supply/2,voltage_power_supply/2), _electricalAngle(angle_now, pole_pairs),TIM1);
     // setPhaseVoltage(percent_torque_requested*100, 0, _electricalAngle(angle_now, pole_pairs),TIM1);
-    setPhaseVoltage(Iq_controller_output, Id_controller_output, _electricalAngle(angle_now, pole_pairs),TIM1);
+    setPhaseVoltage(Iq_controller_output, Id_controller_output, _electricalAngle(angle_now, pole_pairs)+OFFSET_ANGLE,TIM1);
+    #endif
     #endif
 
     #ifdef SIXSTEP

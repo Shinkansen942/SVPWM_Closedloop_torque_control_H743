@@ -3,7 +3,7 @@
 
 // Code Config Options
 // #define SDDEBUG           //undefine to disable debug
-#define CAL_ZERO_ANGLE  //undefine to disable zero electrical angle calibration
+// #define CAL_ZERO_ANGLE  //undefine to disable zero electrical angle calibration
 // #define TIMING          //undefine to disable loop timing
 #define CAN_OT_FAULT    //undefine to disable CAN OVERTIME Falut
 #define RMSOCP          //undefine to disable RMS overcurrent protection
@@ -12,6 +12,12 @@
 #define CAN_CONFIG      //define to enable use CAN to change variables
 // #define SIXSTEP         //define to enable six step comutation
 #define VQ_LEQ_0        //define to use Vq less than 0
+// #define MIDDLE_CLAMP    //define to use middle clamp
+
+#define OPEN_LOOP_SPEED
+#ifdef OPEN_LOOP_SPEED
+#define OPEN_LOOP_RPM 60 // Motor RPM
+#endif
 
 // Motor number
 #define MOT_RL
@@ -37,11 +43,18 @@
 #else
 #ifdef MOT_RR
 #define ZERO_ELECTRIC_ANGLE 1.28f //should be in radians
-// #define DIR 1
 #endif
 #ifdef MOT_RL
-#define ZERO_ELECTRIC_ANGLE 4.88f //should be in radians
-// #define DIR 1
+#define ZERO_ELECTRIC_ANGLE 4.74f //should be in radians
 #endif
 #endif
+
+#ifdef MOT_RR
+#define OFFSET_ANGLE 0.0f //should be in radians
+#define MIDDLE_CLAMP
+#endif
+#ifdef MOT_RL
+#define OFFSET_ANGLE -1.57079632679489661923f //should be in radians
+#endif
+
 #endif

@@ -103,16 +103,17 @@ void setPwm(float Ua, float Ub, float Uc, TIM_TypeDef * TIM_BASE) {
 void setPhaseVoltage(float Uq,float Ud, float angle_el, TIM_TypeDef * TIM_BASE) {
   angle_el = _normalizeAngle(angle_el + zero_electric_angle);
   
-  #ifdef VQ_LEQ_0
-  if (Uq <0 ){
-	  angle_el+=M_PI;
-	  Uq=fabsf(Uq);
-  }
-  angle_el =  _normalizeAngle (angle_el+M_PI/2);
-  #endif
+  // #ifdef VQ_LEQ_0
+  // if (Uq <0 ){
+	//   angle_el+=M_PI;
+	//   Uq=fabsf(Uq);
+  // }
+  // angle_el =  _normalizeAngle (angle_el);
+  // #endif
 
   // int sector = floor(angle_el / M_PI*3) + 1;
   // calculate the duty cycles
+  #ifdef MIDDLE_CLAMP
   float sa;
   float ca;
   _sincos(angle_el,&sa,&ca);
@@ -131,7 +132,58 @@ void setPhaseVoltage(float Uq,float Ud, float angle_el, TIM_TypeDef * TIM_BASE) 
   Ua += center;
   Ub += center;
   Uc += center;
+  #else
+  angle_el =  _normalizeAngle (angle_el+M_PI/2);
+  int sector = floor(angle_el / M_PI*3) + 1;
+  // calculate the duty cycles
+  float T1 = _SQRT3 * sin(sector * M_PI/3 - angle_el) * Uq / voltage_power_supply;
+  float T2 = _SQRT3 * sin(angle_el - (sector - 1.0) * M_PI/3) * Uq / voltage_power_supply;
+  float T0 = 1 - T1 - T2;
 
+
+  float Ta, Tb, Tc;
+  switch (sector)
+  {
+    case 1:
+      Ta = T1 + T2 + T0 / 2;
+      Tb = T2 + T0 / 2;
+      Tc = T0 / 2;
+      break;
+    case 2:
+      Ta = T1 + T0 / 2;
+      Tb = T1 + T2 + T0 / 2;
+      Tc = T0 / 2;
+      break;
+    case 3:
+      Ta = T0 / 2;
+      Tb = T1 + T2 + T0 / 2;
+      Tc = T2 + T0 / 2;
+      break;
+    case 4:
+      Ta = T0 / 2;
+      Tb = T1 + T0 / 2;
+      Tc = T1 + T2 + T0 / 2;
+      break;
+    case 5:
+      Ta = T2 + T0 / 2;
+      Tb = T0 / 2;
+      Tc = T1 + T2 + T0 / 2;
+      break;
+    case 6:
+      Ta = T1 + T2 + T0 / 2;
+      Tb = T0 / 2;
+      Tc = T1 + T0 / 2;
+      break;
+    default:
+      Ta = 0;
+      Tb = 0;
+      Tc = 0;
+  }
+  // 克拉克逆变换
+  float Ua = Ta * voltage_power_supply;
+  float Ub = Tb * voltage_power_supply;
+  float Uc = Tc * voltage_power_supply;
+  #endif
   setPwm(Ua,Ub,Uc,TIM_BASE);
 }
 
