@@ -101,7 +101,7 @@ void setPwm(float Ua, float Ub, float Uc, TIM_TypeDef * TIM_BASE) {
 }
 
 void setPhaseVoltage(float Uq,float Ud, float angle_el, TIM_TypeDef * TIM_BASE) {
-  angle_el = _normalizeAngle(angle_el + zero_electric_angle);
+  angle_el = _normalizeAngle(angle_el);
   
   // #ifdef VQ_LEQ_0
   // if (Uq <0 ){
@@ -234,7 +234,7 @@ float cal_angular_vel(float angle_now)
 }
 void cal_Idq(float* current_phase, float angle_el, float* Id, float* Iq)
 {
-	angle_el = _normalizeAngle(angle_el + zero_electric_angle);
+	angle_el = _normalizeAngle(angle_el);
 	float I_alpha=current_phase[0];
 	float I_beta=_1_SQRT3*(2*current_phase[1]+current_phase[0]);
 //	 float Iq=-sin(angle_el)*I_alpha+cos(angle_el)*I_beta;

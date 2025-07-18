@@ -12,15 +12,15 @@
 #define CAN_CONFIG      //define to enable use CAN to change variables
 // #define SIXSTEP         //define to enable six step comutation
 #define VQ_LEQ_0        //define to use Vq less than 0
-// #define MIDDLE_CLAMP    //define to use middle clamp
+#define MIDDLE_CLAMP    //define to use middle clamp
 
-#define OPEN_LOOP_SPEED
+// #define OPEN_LOOP_SPEED
 #ifdef OPEN_LOOP_SPEED
 #define OPEN_LOOP_RPM 60 // Motor RPM
 #endif
 
 // Motor number
-#define MOT_RL
+#define MOT_RR
 
 // Protections
 #define SOFTOCP 70
@@ -37,6 +37,7 @@
 #define RAMP_TIME 1.0f
 #define HW_OC_TIME 4600 //should be in pwm cycles, 4600 is 100ms
 #define SOFT_OC_TIME 100 //should be in pwm cycles, 100 is 2ms
+#define ENC_TIME 100 //should be in pwm cycles, 100 is 2ms
 
 #ifdef CAL_ZERO_ANGLE
 #define ZERO_ELECTRIC_ANGLE 0.0f //should be in radians
@@ -47,14 +48,6 @@
 #ifdef MOT_RL
 #define ZERO_ELECTRIC_ANGLE 4.74f //should be in radians
 #endif
-#endif
-
-#ifdef MOT_RR
-#define OFFSET_ANGLE 0.0f //should be in radians
-#define MIDDLE_CLAMP
-#endif
-#ifdef MOT_RL
-#define OFFSET_ANGLE -1.57079632679489661923f //should be in radians
 #endif
 
 #endif

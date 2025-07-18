@@ -125,6 +125,10 @@ __attribute__((section("._RAM_D2_Area"))) uint8_t soft_oc_buf[HW_OC_TIME] = {0};
 uint16_t soft_oc_index = 0;
 uint16_t soft_oc_sum = 0;
 
+__attribute__((section("._RAM_D2_Area"))) uint8_t enc_buf[ENC_TIME] = {0};
+uint16_t enc_index = 0;
+uint16_t enc_sum = 0;
+
 int16_t T_Report=0;
 int16_t T_Mot = 0;
 int16_t T_MCU = 0;
@@ -133,7 +137,9 @@ int16_t T_V;
 int16_t T_W;
 uint16_t report_DCV;
 
+#ifdef OPEN_LOOP_SPEED
 float open_loop_rpm_var = OPEN_LOOP_RPM;
+#endif
 
 //FOC variables
 float open_loop_timestamp=0;
@@ -712,9 +718,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     
 
     Get_Encoder_Angle(ADC2_arr,&angle_now);
+    int8_t enc_err = 0;
     if(angle_now != angle_now)
     {
-      Enter_ERROR_State(ERROR_ENC);
+      enc_err = 1;
     }
     for (size_t i = 0; i < 4; i++)
     {
@@ -723,6 +730,17 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         Enter_ERROR_State(ERROR_ENC);
       }
     }
+    enc_sum -= enc_buf[enc_index];
+    enc_buf[enc_index] = enc_buf;
+    enc_sum += enc_buf[enc_index];
+    if (enc_sum > ENC_TIME/2)
+    {
+      if (inverter_state == STATE_RUNNING)
+      {
+        Enter_ERROR_State(ERROR_ENC);
+      }    
+    }
+
     angle_now = _normalizeAngle(angle_now);
     
     voltage_power_supply = (float)ADC3_arr[0]*DCVPLSB;
@@ -800,7 +818,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
     // setPhaseVoltage(_constrain(Iq_controller_output+IqOC_controller_output,-voltage_power_supply/2,voltage_power_supply/2),  _constrain(Id_controller_output,-voltage_power_supply/2,voltage_power_supply/2), _electricalAngle(angle_now, pole_pairs),TIM1);
     // setPhaseVoltage(percent_torque_requested*100, 0, _electricalAngle(angle_now, pole_pairs),TIM1);
-    setPhaseVoltage(Iq_controller_output, Id_controller_output, _electricalAngle(angle_now, pole_pairs)+OFFSET_ANGLE,TIM1);
+    setPhaseVoltage(Iq_controller_output, Id_controller_output, _electricalAngle(angle_now, pole_pairs),TIM1);
     #endif
     #endif
 
@@ -1054,13 +1072,21 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
             }
             oc_sum = 0;
             oc_index = 0;
+
             soft_oc_sum = 0;
             soft_oc_index = 0;
             for (size_t i = 0; i < SOFT_OC_TIME; i++)
             {
-              /* code */
               soft_oc_buf[i] = 0;
             }
+
+            enc_sum = 0;
+            enc_index = 0;
+            for (size_t i = 0; i < ENC_TIME; i++)
+            {
+              enc_buf[i] = 0;
+            }
+            
             
             HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_SET);
           // disable
@@ -1163,7 +1189,7 @@ void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo1ITs)
         switch (RxData1[0])
         {
         case 0x1:
-          zero_electric_angle = val;
+          pid_controller_current_Iq.P = val;
           break;
 
         case 0x2:
