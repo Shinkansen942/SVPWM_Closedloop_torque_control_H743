@@ -44,9 +44,11 @@
 #else
 #ifdef MOT_RR
 #define ZERO_ELECTRIC_ANGLE 1.28f //should be in radians
+#define MOT_CURR 0.907f
 #endif
 #ifdef MOT_RL
 #define ZERO_ELECTRIC_ANGLE 4.74f //should be in radians
+#define MOT_CURR 0.991f
 #endif
 #endif
 
