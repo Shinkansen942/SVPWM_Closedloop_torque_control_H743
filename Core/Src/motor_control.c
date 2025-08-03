@@ -19,7 +19,7 @@ extern int dir;
 extern float voltage_limit;
 extern float voltage_power_supply;
 extern int period;
-extern float angle_prev;
+// extern float angle_prev;
 extern float Ts;
 
 int trap_120_map[6][3] = {
@@ -214,29 +214,38 @@ void setSixStepPhaseVoltage(float Uq, float angle_el, TIM_TypeDef* TIM_BASE)
   setPwm(Ua,Ub,Uc,TIM_BASE);
 }
 
-float cal_angular_vel(float angle_now)
+float cal_angular_vel(float angle_now,float* speed_RPM)
 {
-    if (angle_prev < 0){
+  float return_value = 0.0f;
+  static float angle_prev = -1.0f;
+  if (angle_prev < 0){
     	angle_prev=angle_now;
     	return 0;
     }
-    float delta_angle=angle_now -angle_prev;
+    float delta_angle=angle_now - angle_prev;
     if (delta_angle >= 1.6*M_PI){
     	delta_angle-=2*M_PI;
+      return_value = -1.0f;
     }
     if (delta_angle <= -1.6*M_PI){
-        	delta_angle+=2*M_PI;
+      delta_angle+=2*M_PI;
+      return_value = 1.0f;
     }
     angle_prev=angle_now;
-    return delta_angle/Ts;
+    *speed_RPM = delta_angle / Ts * 60 / (2 * M_PI); // convert rad/s to RPM
+    return return_value;
 
 
 }
 void cal_Idq(float* current_phase, float angle_el, float* Id, float* Iq)
 {
 	angle_el = _normalizeAngle(angle_el);
-	float I_alpha=current_phase[0];
-	float I_beta=_1_SQRT3*(2*current_phase[1]+current_phase[0]);
+  float mid_current = (current_phase[0] + current_phase[1] + current_phase[2]) / 3.0f;
+  // 将三相电流转换为两相电流
+  float a = current_phase[0] - mid_current;
+  float b = current_phase[1] - mid_current;
+	float I_alpha=a;
+  float I_beta=_1_SQRT3*(2*b+a);
 //	 float Iq=-sin(angle_el)*I_alpha+cos(angle_el)*I_beta;
 //	 float Id=cos(angle_el)*I_alpha+sin(angle_el)*I_beta;
 	*Iq = -sin(angle_el)*I_alpha+cos(angle_el)*I_beta;

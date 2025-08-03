@@ -137,7 +137,6 @@ void Error_Handler(void);
 #define Motor_Enable_GPIO_Port GPIOD
 #define OC_Fault_Pin GPIO_PIN_6
 #define OC_Fault_GPIO_Port GPIOD
-#define OC_Fault_EXTI_IRQn EXTI9_5_IRQn
 
 /* USER CODE BEGIN Private defines */
 

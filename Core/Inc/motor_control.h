@@ -24,7 +24,7 @@ float velocityOpenloop(float target_velocity, float Uq, TIM_TypeDef * TIM_BASE);
 void setPwm(float Ua, float Ub, float Uc, TIM_TypeDef * TIM_BASE);
 void setPhaseVoltage(float Uq,float Ud, float angle_el, TIM_TypeDef * TIM_BASE);
 void setSixStepPhaseVoltage(float Uq, float angle_el, TIM_TypeDef* TIM_BASE);
-float cal_angular_vel(float angle_now);
+float cal_angular_vel(float angle_now,float* speed_RPM);
 void cal_Idq(float* current_phase, float angle_el, float* Id, float* Iq);
 
 

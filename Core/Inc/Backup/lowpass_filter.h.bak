@@ -15,5 +15,7 @@ typedef struct LowPassFilter{
 } lpf_t;
 float LowPassFilter_operator(float x, struct LowPassFilter* filter);
 
+void LowPassFilter_reset(lpf_t* filter);
+
 
 #endif /* INC_LOWPASS_FILTER_H_ */

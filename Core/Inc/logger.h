@@ -16,8 +16,8 @@ typedef struct LOGGER
     int16_t     LGIU;       //100*U Phase Current           2Byte
     int16_t     LGIV;       //100*V Phase Current           2Byte
     int16_t     LGIW;       //100*W Phase Current           2Byte
-    int16_t     LGTMOS;     //10*T Report                   2Byte
-    int16_t     LGTMOT;     //10*T Motor                    2Byte
+    uint16_t    LGTMOS;     //10*T Report                   2Byte
+    uint16_t    LGTMOT;     //10*T Motor                    2Byte
     int16_t     LGSINE;     //S+-S-                         2Byte
     int16_t     LGCOS;      //C+-C-                         2Byte
     uint16_t    LGANG;      //100*electrical angle          2Byte

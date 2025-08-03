@@ -95,7 +95,6 @@ Core/Src/pid.c \
 Core/Src/rtc.c \
 Core/Src/sdmmc.c \
 Core/Src/sincos_encoder.c \
-Core/Src/spi.c \
 Core/Src/stm32h7xx_hal_msp.c \
 Core/Src/stm32h7xx_it.c \
 Core/Src/syscalls.c \
@@ -131,8 +130,6 @@ Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_rtc.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_rtc_ex.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_sd.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_sd_ex.c \
-Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_spi.c \
-Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_spi_ex.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_tim.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_tim_ex.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_uart.c \
