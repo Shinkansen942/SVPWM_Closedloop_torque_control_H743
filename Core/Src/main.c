@@ -777,7 +777,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     {
       if(ADC2_arr[i] < ENC_UV)
       {
+        #ifndef OPEN_LOOP_SPEED
         Enter_ERROR_State(ERROR_ENC);
+        #endif
       }
     }
     enc_sum -= enc_buf[enc_index];
@@ -787,7 +789,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     {
       if (inverter_state == STATE_RUNNING)
       {
+        #ifndef OPEN_LOOP_SPEED
         Enter_ERROR_State(ERROR_ENC);
+        #endif
       }    
     }
 
