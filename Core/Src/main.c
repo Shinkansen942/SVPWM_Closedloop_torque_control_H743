@@ -855,9 +855,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     }
     #ifdef OPEN_LOOP_SPEED
     static float last_angle;
-    angle_now = _normalizeAngle(last_angle + open_loop_rpm_var/ 60.0f / freq * 2 * M_PI * pole_pairs);
+    angle_now = _normalizeAngle(last_angle + open_loop_rpm_var/ 60.0f / freq * 2 * M_PI * 4);
     last_angle = angle_now;
-    setPhaseVoltage(5, 0, _electricalAngle(angle_now, pole_pairs)+OFFSET_ANGLE,TIM1);
+    setPhaseVoltage(Iq_controller_output, Id_controller_output, _electricalAngle(angle_now, pole_pairs),TIM1);
     
     #else
 

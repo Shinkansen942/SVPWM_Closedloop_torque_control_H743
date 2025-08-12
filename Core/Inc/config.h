@@ -14,7 +14,7 @@
 #define VQ_LEQ_0        //define to use Vq less than 0
 #define MIDDLE_CLAMP    //define to use middle clamp
 
-// #define OPEN_LOOP_SPEED
+#define OPEN_LOOP_SPEED
 #ifdef OPEN_LOOP_SPEED
 #define OPEN_LOOP_RPM 60 // Motor RPM
 #endif
