@@ -148,7 +148,7 @@ float zero_electric_angle=ZERO_ELECTRIC_ANGLE;
 float shaft_angle=0;
 float voltage_limit=440;
 float voltage_power_supply=440;
-int period=5217; // period for the PWM
+int period=10909; // period for the PWM
 int dir=1; // anti clockwise direction is 1 , clockwise is -1
 // int dir = DIR; // anti clockwise direction is 1 , clockwise is -1
 int pole_pairs=1;
@@ -176,14 +176,15 @@ int prevWhileTest = 0;
 uint8_t got_date = 0;
 uint8_t last_got_date = 0;
 
-int freq = 23000;
-float Ts=(float)1/22997;
+int freq = 11000;
+float Ts=(float)1/11000;
 // float angle_prev=-1.0f;
 const float torque_constant = 0.291f; //Nm/A
 const float max_torque = 25;
 const float max_current = 70;
 float percent_torque_requested = 0.0f;
 float last_percent = 0.0f;
+float abs_last_percent = 0.0f;
 uint16_t current_offset[4];
 float current_phase[3];
 int16_t Mot_Conv[1024] = {0};
@@ -240,13 +241,13 @@ int CAN_Timer = 0;
 const char TestFPath[] = {"Test.bin"};
 char TextFPath[40];
 
-lpf_t filter= {.Tf=0.00004,.y_prev=0.0f};         //Tf=1ms
-lpf_t filter_current_Iq= {.Tf=0.004,.y_prev=0.0f}; //Tf=20ms
-lpf_t filter_current_Id= {.Tf=0.004,.y_prev=0.0f}; //Tf=20ms
-lpf_t filter_current_Iabc[3] = {{.Tf = 0.00004,.y_prev=0.0f},{.Tf = 0.00004,.y_prev=0.0f},{.Tf = 0.00004,.y_prev=0.0f}}; //Tf=2ms
+lpf_t filter= {.Tf=0.00008,.y_prev=0.0f};         //Tf=1ms
+lpf_t filter_current_Iq= {.Tf=0.008,.y_prev=0.0f}; //Tf=20ms
+lpf_t filter_current_Id= {.Tf=0.008,.y_prev=0.0f}; //Tf=20ms
+lpf_t filter_current_Iabc[3] = {{.Tf = 0.00008,.y_prev=0.0f},{.Tf = 0.00008,.y_prev=0.0f},{.Tf = 0.00008,.y_prev=0.0f}}; //Tf=2ms
 lpf_t filter_RPM = {.Tf=0.1,.y_prev=0.0f};
-pidc_t pid_controller_current_Iq = {.P=1.5f,.I=5.0f,.D=PID_D,.output_ramp=PID_RAMP,.limit=PID_LIMIT,.error_prev=0,.output_prev=0,.integral_prev=0};
-pidc_t pid_controller_current_Id = {.P=0.9f,.I=5.0f,.D=PID_D,.output_ramp=PID_RAMP,.limit=PID_LIMIT,.error_prev=0,.output_prev=0,.integral_prev=0};
+pidc_t pid_controller_current_Iq = {.P=1.5f,.I=0.625f,.D=PID_D,.output_ramp=PID_RAMP,.limit=PID_LIMIT,.error_prev=0,.output_prev=0,.integral_prev=0};
+pidc_t pid_controller_current_Id = {.P=0.9f,.I=0.625f,.D=PID_D,.output_ramp=PID_RAMP,.limit=PID_LIMIT,.error_prev=0,.output_prev=0,.integral_prev=0};
 pidc_t pid_controller_current_OCP = {.P=1.0f,.I=1.0f,.D=PID_D,.output_ramp=PID_RAMP,.limit=PID_LIMIT,.error_prev=0,.output_prev=0,.integral_prev=0};
 pidc_t pid_controller_current_Ia = {.P=1.0f,.I=1.0f,.D=PID_D,.output_ramp=PID_RAMP,.limit=PID_LIMIT,.error_prev=0,.output_prev=0,.integral_prev=0};
 
@@ -729,7 +730,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
       ADC3_arr[i] = DMA_ADC3_arr[i];
     }
     
-    static float abs_last_percent = 0.0f;
     if(inverter_state == STATE_RUNNING)
     {
       if(abs(abs_last_percent) < abs(percent_torque_requested))
@@ -741,6 +741,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         abs_last_percent = abs(percent_torque_requested);
       }
       last_percent = (percent_torque_requested > 0) ? abs_last_percent : -abs_last_percent;
+      last_percent = percent_torque_requested;
       HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_SET);
     }
     else
@@ -748,7 +749,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
       last_percent = 0.0f;
       HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_RESET);
     }
-    if(inverter_state == STATE_READY)
+    if(inverter_state == STATE_READY|| inverter_state == STATE_ERROR)
     {
       PID_reset(&pid_controller_current_Id);
       PID_reset(&pid_controller_current_Iq);
@@ -917,7 +918,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     {
       report_status |= REPORT_STATUS_FAULT;
     }
-    if(ADC3_arr[0]*DCVPLSB > 60)
+    if(ADC3_arr[0]*DCVPLSB > 55)
     {
       report_status |= REPORT_STATUS_HV;
     }
@@ -925,8 +926,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     if (indexStatus == freq/100)
     {
       // int_RPM = (int) lroundf(filtered_RPM);
-      // int16_t report_RPM = (int) roundf(filtered_RPM);
-      int16_t report_RPM = (int16_t) roundf(zero_cross/4*100*60);
+      int16_t report_RPM = (int16_t) roundf(filtered_RPM);
+      // int16_t report_RPM = (int16_t) roundf(zero_cross/4*100*60);
       zero_cross = 0.0f;
       int16_t report_torque = (int16_t) roundf(filtered_Iq*torque_constant/max_torque*1000);
       CAN_Send_Status(report_status,report_torque,report_RPM);

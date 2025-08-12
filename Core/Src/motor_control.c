@@ -84,14 +84,18 @@ float velocityOpenloop(float target_velocity, float Uq, TIM_TypeDef * TIM_BASE){
 void setPwm(float Ua, float Ub, float Uc, TIM_TypeDef * TIM_BASE) {
 
 //	// 限制上限
-	Ua = _constrain(Ua, 0.0f, voltage_limit);
-	Ub = _constrain(Ub, 0.0f, voltage_limit);
-	Uc = _constrain(Uc, 0.0f, voltage_limit);
+	// Ua = _constrain(Ua, 0.0f, voltage_limit);
+	// Ub = _constrain(Ub, 0.0f, voltage_limit);
+	// Uc = _constrain(Uc, 0.0f, voltage_limit);
 	// 计算占空比
 	// 限制占空比从0到1
-	float dc_a = _constrain(Ua / voltage_power_supply, 0.0f , 1.0f );
-	float dc_b = _constrain(Ub / voltage_power_supply, 0.0f , 1.0f );
-	float dc_c = _constrain(Uc / voltage_power_supply, 0.0f , 1.0f );
+	// float dc_a = _constrain(Ua / voltage_power_supply, 0.0f , 1.0f );
+	// float dc_b = _constrain(Ub / voltage_power_supply, 0.0f , 1.0f );
+	// float dc_c = _constrain(Uc / voltage_power_supply, 0.0f , 1.0f );
+
+  float dc_a = _constrain(Ua , 0.0f , 1.0f );
+	float dc_b = _constrain(Ub , 0.0f , 1.0f );
+	float dc_c = _constrain(Uc , 0.0f , 1.0f );
 
 	//写入PWM到PWM 0 1 2 通道
 	TIM_BASE->CCR1 = (uint32_t) roundf(dc_a*period);
@@ -122,16 +126,19 @@ void setPhaseVoltage(float Uq,float Ud, float angle_el, TIM_TypeDef * TIM_BASE) 
   float Ua = Ualpha;
   float Ub = -0.5f * Ualpha + _SQRT3_2 * Ubeta;
   float Uc = -0.5f * Ualpha - _SQRT3_2 * Ubeta;
-  float center = voltage_limit/2;
+  float Da = _constrain((Ua / voltage_power_supply+1)/2,0.0f,1.0f);
+  float Db = _constrain((Ub / voltage_power_supply+1)/2,0.0f,1.0f);
+  float Dc = _constrain((Uc / voltage_power_supply+1)/2,0.0f,1.0f);
+  float center = 0.5f;
   // discussed here: https://community.simplefoc.com/t/embedded-world-2023-stm32-cordic-co-processor/3107/165?u=candas1
   // a bit more info here: https://microchipdeveloper.com/mct5001:which-zsm-is-best
   // Midpoint Clamp
-  float Umin = fminf(Ua, fminf(Ub, Uc));
-  float Umax = fmaxf(Ua, fmaxf(Ub, Uc));
-  center -= (Umax+Umin) / 2;
-  Ua += center;
-  Ub += center;
-  Uc += center;
+  float Dmin = fminf(Da, fminf(Db, Dc));
+  float Dmax = fmaxf(Da, fmaxf(Db, Dc));
+  center -= (Dmax+Dmin) / 2;
+  Da += center;
+  Db += center;
+  Dc += center;
   #else
   angle_el =  _normalizeAngle (angle_el+M_PI/2);
   int sector = floor(angle_el / M_PI*3) + 1;
@@ -184,7 +191,10 @@ void setPhaseVoltage(float Uq,float Ud, float angle_el, TIM_TypeDef * TIM_BASE) 
   float Ub = Tb * voltage_power_supply;
   float Uc = Tc * voltage_power_supply;
   #endif
-  setPwm(Ua,Ub,Uc,TIM_BASE);
+  // Ua = Da * voltage_power_supply;
+  // Ub = Db * voltage_power_supply;
+  // Uc = Dc * voltage_power_supply;
+  setPwm(Da,Db,Dc,TIM_BASE);
 }
 
 void setSixStepPhaseVoltage(float Uq, float angle_el, TIM_TypeDef* TIM_BASE)

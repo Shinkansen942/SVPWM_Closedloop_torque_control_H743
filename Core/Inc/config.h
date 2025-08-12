@@ -24,7 +24,7 @@
 
 // Protections
 #define SOFTOCP 70
-#define ACAOCP 20   
+#define ACAOCP 70   
 #define MOVRMSOCP 100000000 //should be 10000*OCP^2
 #define MOS_OTP 1000 //should be 10 times otp temp in deg C
 #define MOT_OTP 1200 //should be 10 times otp temp in deg C
@@ -35,9 +35,9 @@
 #define PID_RAMP 1000.0f
 #define PID_LIMIT 20.0f
 #define RAMP_TIME 1.0f
-#define HW_OC_TIME 2300 //should be in pwm cycles, 4600 is 100ms
-#define SOFT_OC_TIME 50 //should be in pwm cycles, 100 is 2ms
-#define ENC_TIME 50 //should be in pwm cycles, 100 is 2ms
+#define HW_OC_TIME 2300 //should be in pwm cycles, 2300 is 100ms
+#define SOFT_OC_TIME 50 //should be in pwm cycles, 50 is 2ms
+#define ENC_TIME 50 //should be in pwm cycles, 50 is 2ms
 
 #ifdef CAL_ZERO_ANGLE
 #define ZERO_ELECTRIC_ANGLE 0.0f //should be in radians
