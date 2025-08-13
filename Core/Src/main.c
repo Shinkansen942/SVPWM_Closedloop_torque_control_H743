@@ -140,6 +140,7 @@ uint16_t report_DCV;
 
 #ifdef OPEN_LOOP_SPEED
 float open_loop_rpm_var = OPEN_LOOP_RPM;
+float last_angle = 0.0f;
 #endif
 
 //FOC variables
@@ -817,7 +818,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         {
           soft_oc_detected = 1;
         }
-        current_phase[i] = filtered_Iabc[i];
+        // current_phase[i] = filtered_Iabc[i];
     }
     soft_oc_buf[soft_oc_index] = soft_oc_detected;
     soft_oc_sum += soft_oc_buf[soft_oc_index];
@@ -839,6 +840,13 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     pid_controller_current_Iq.limit = voltage_limit;
     pid_controller_current_OCP.limit = voltage_limit;
 
+    #ifdef OPEN_LOOP_SPEED
+    angle_now = _normalizeAngle(last_angle + open_loop_rpm_var/ 60.0f / freq * 2 * M_PI * 4);
+    last_angle = angle_now;
+    // setPhaseVoltage(Iq_controller_output, Id_controller_output, _electricalAngle(angle_now, pole_pairs),TIM1);
+    
+    #endif
+    
     float Id,Iq;
     cal_Idq(current_phase, _electricalAngle(angle_now, pole_pairs), &Id, &Iq);
     filtered_Iq=LowPassFilter_operator(Iq,&filter_current_Iq);
@@ -857,18 +865,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     {
       IqOC_controller_output = _constrain(PID_operator(-SOFTOCP-Ia,&pid_controller_current_OCP),0,-Iq_controller_output);
     }
-    #ifdef OPEN_LOOP_SPEED
-    static float last_angle;
-    angle_now = _normalizeAngle(last_angle + open_loop_rpm_var/ 60.0f / freq * 2 * M_PI * 4);
-    last_angle = angle_now;
-    setPhaseVoltage(Iq_controller_output, Id_controller_output, _electricalAngle(angle_now, pole_pairs),TIM1);
     
-    #else
-
     // setPhaseVoltage(_constrain(Iq_controller_output+IqOC_controller_output,-voltage_power_supply/2,voltage_power_supply/2),  _constrain(Id_controller_output,-voltage_power_supply/2,voltage_power_supply/2), _electricalAngle(angle_now, pole_pairs),TIM1);
     // setPhaseVoltage(percent_torque_requested*100, 0, _electricalAngle(angle_now, pole_pairs),TIM1);
     setPhaseVoltage(Iq_controller_output, Id_controller_output, _electricalAngle(angle_now, pole_pairs),TIM1);
-    #endif
     #endif
 
     #ifdef SIXSTEP
@@ -1199,7 +1199,7 @@ void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo1ITs)
         switch (RxData1[0])
         {
         case 0x1:
-          pid_controller_current_Iq.P = val;
+          open_loop_rpm_var = val;
           break;
 
         case 0x2:
@@ -1295,7 +1295,7 @@ void Config_Fdcan1(void)
   #endif
 
   CAN1RxFilterConfig.IdType = FDCAN_STANDARD_ID;
-  CAN1RxFilterConfig.FilterIndex = 2;
+  CAN1RxFilterConfig.FilterIndex = 3;
   CAN1RxFilterConfig.FilterType = FDCAN_FILTER_DUAL;
   CAN1RxFilterConfig.FilterConfig = FDCAN_FILTER_TO_RXFIFO1;
   CAN1RxFilterConfig.FilterID1 = 0x720+MOT_ID;

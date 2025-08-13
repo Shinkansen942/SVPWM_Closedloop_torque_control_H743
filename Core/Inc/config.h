@@ -16,7 +16,7 @@
 
 #define OPEN_LOOP_SPEED
 #ifdef OPEN_LOOP_SPEED
-#define OPEN_LOOP_RPM 60 // Motor RPM
+#define OPEN_LOOP_RPM 12000 // Motor RPM
 #endif
 
 // Motor number
