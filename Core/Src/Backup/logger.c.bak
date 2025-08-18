@@ -15,14 +15,17 @@ void set_one(logger_t log_struct[2][2])
             log_struct[i][j].LGIU = 0x1;
             log_struct[i][j].LGIV = 0x1;
             log_struct[i][j].LGIW = 0x1;
-            log_struct[i][j].LGTMOS = 0x1;
-            log_struct[i][j].LGTMOT = 0x1;
+            log_struct[i][j].LGVQ = 0x1;
+            log_struct[i][j].LGVD = 0x1;
             log_struct[i][j].LGSINE = 0x1;
             log_struct[i][j].LGCOS = 0x1;
             log_struct[i][j].LGANG = 0x1;
             log_struct[i][j].LGTCMD = 0x1;
             log_struct[i][j].LGSTATE = 0x1;
-            log_struct[i][j].LGCRC = 0x1;
+            log_struct[i][j].LGVV = 0x1;
+            log_struct[i][j].LGVU = 0x1;
+            log_struct[i][j].LGVW = 0x1;
+            log_struct[i][j].LGRPM = 0x1;
         }
         
     }

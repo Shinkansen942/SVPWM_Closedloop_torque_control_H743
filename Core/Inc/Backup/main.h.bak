@@ -39,6 +39,7 @@ extern "C" {
 #include <stdint.h>
 #include "config.h"
 #include "canid.h"
+// #include "filter_coe.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/

@@ -129,6 +129,7 @@ void setPhaseVoltage(float Uq,float Ud, float angle_el, TIM_TypeDef * TIM_BASE) 
   float Da = _constrain((Ua / voltage_power_supply+1)/2,0.0f,1.0f);
   float Db = _constrain((Ub / voltage_power_supply+1)/2,0.0f,1.0f);
   float Dc = _constrain((Uc / voltage_power_supply+1)/2,0.0f,1.0f);
+  #ifdef SVPWM
   float center = 0.5f;
   // discussed here: https://community.simplefoc.com/t/embedded-world-2023-stm32-cordic-co-processor/3107/165?u=candas1
   // a bit more info here: https://microchipdeveloper.com/mct5001:which-zsm-is-best
@@ -139,6 +140,7 @@ void setPhaseVoltage(float Uq,float Ud, float angle_el, TIM_TypeDef * TIM_BASE) 
   Da += center;
   Db += center;
   Dc += center;
+  #endif
   #else
   angle_el =  _normalizeAngle (angle_el+M_PI/2);
   int sector = floor(angle_el / M_PI*3) + 1;
@@ -224,7 +226,7 @@ void setSixStepPhaseVoltage(float Uq, float angle_el, TIM_TypeDef* TIM_BASE)
   setPwm(Ua,Ub,Uc,TIM_BASE);
 }
 
-float cal_angular_vel(float angle_now,float* speed_RPM)
+float cal_angular_vel(float angle_now,float* speed_rad)
 {
   float return_value = 0.0f;
   static float angle_prev = -1.0f;
@@ -242,7 +244,7 @@ float cal_angular_vel(float angle_now,float* speed_RPM)
       return_value = 1.0f;
     }
     angle_prev=angle_now;
-    *speed_RPM = delta_angle / Ts * 60 / (2 * M_PI); // convert rad/s to RPM
+    *speed_rad = delta_angle / Ts;
     return return_value;
 
 

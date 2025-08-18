@@ -89,7 +89,6 @@ Core/Src/logger.c \
 Core/Src/lowpass_filter.c \
 Core/Src/main.c \
 Core/Src/mdma.c \
-Core/Src/memorymap.c \
 Core/Src/motor_control.c \
 Core/Src/pid.c \
 Core/Src/rtc.c \
@@ -246,6 +245,7 @@ C_INCLUDES =  \
 -IDrivers/STM32H7xx_HAL_Driver/Inc/Legacy \
 -IFATFS/App \
 -IFATFS/Target \
+-IMiddlewares/ST/ARM/DSP/Inc \
 -IMiddlewares/Third_Party/FatFs/src
 
 
@@ -279,8 +279,9 @@ CXXFLAGS += $(ASSEMBLER_LIST_OUTPUT_FLAG)
 LDSCRIPT = stm32h743zitx_flash.ld
 
 # libraries
-LIBS = -lc -lm -lnosys 
+LIBS = -larm_cortexM7lfdp_math -lc -lm -lnosys 
 LIBDIR = \
+-LDrivers/CMSIS/DSP/Lib/GCC
 
 
 # Additional LD Flags from config file
