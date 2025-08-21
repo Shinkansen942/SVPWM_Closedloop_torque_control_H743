@@ -48,41 +48,7 @@ float _electricalAngle(float shaft_angle, int pole_pairs) {
   return _normalizeAngle(((float)(dir * pole_pairs)*shaft_angle)-zero_electric_angle);
 }
 
-
-
-//开环速度函数
-float velocityOpenloop(float target_velocity, float Uq, TIM_TypeDef * TIM_BASE){
-//	uint32_t now_us = getCurrentMicros();
-//	uint32_t now_us = HAL_GetTick();
-//  Provides a tick value in microseconds.
-
-  //计算当前每个Loop的运行时间间隔
-//  float Ts = (now_us - open_loop_timestamp) * 1e-3f;
-	float Ts=2.5E-3f;
-
-  // 通过乘以时间间隔和目标速度来计算需要转动的机械角度，存储在 shaft_angle 变量中。
-  //在此之前，还需要对轴角度进行归一化，以确保其值在 0 到 2π 之间。
-  shaft_angle = _normalizeAngle(shaft_angle + target_velocity*Ts);
-  //以目标速度为 10 rad/s 为例，如果时间间隔是 1 秒，则在每个循环中需要增加 10 * 1 = 10 弧度的角度变化量，才能使电机转动到目标速度。
-  //如果时间间隔是 0.1 秒，那么在每个循环中需要增加的角度变化量就是 10 * 0.1 = 1 弧度，才能实现相同的目标速度。
-  //因此，电机轴的转动角度取决于目标速度和时间间隔的乘积。
-
-  // Uq is not related to voltage limit
-
-
-  setPhaseVoltage(Uq,  0, _electricalAngle(shaft_angle, pole_pairs),TIM_BASE);
-
-//  open_loop_timestamp = now_us;  //用于计算下一个时间间隔
-
-  return Uq;
-}
-
-
-
-
-
 void setPwm(float Ua, float Ub, float Uc, TIM_TypeDef * TIM_BASE) {
-
 //	// 限制上限
 	// Ua = _constrain(Ua, 0.0f, voltage_limit);
 	// Ub = _constrain(Ub, 0.0f, voltage_limit);
@@ -104,7 +70,7 @@ void setPwm(float Ua, float Ub, float Uc, TIM_TypeDef * TIM_BASE) {
 
 }
 
-void setPhaseVoltage(float Uq,float Ud, float angle_el, TIM_TypeDef * TIM_BASE) {
+void setPhaseVoltage(float Uq,float Ud, float angle_el, TIM_TypeDef * TIM_BASE,float Va,float Vb,float Vc) {
   angle_el = _normalizeAngle(angle_el);
   
   // #ifdef VQ_LEQ_0
@@ -126,6 +92,9 @@ void setPhaseVoltage(float Uq,float Ud, float angle_el, TIM_TypeDef * TIM_BASE) 
   float Ua = Ualpha;
   float Ub = -0.5f * Ualpha + _SQRT3_2 * Ubeta;
   float Uc = -0.5f * Ualpha - _SQRT3_2 * Ubeta;
+  Ua -= Va;
+  Ub -= Vb;
+  Uc -= Vc;
   float Da = _constrain((Ua / voltage_power_supply+1)/2,0.0f,1.0f);
   float Db = _constrain((Ub / voltage_power_supply+1)/2,0.0f,1.0f);
   float Dc = _constrain((Uc / voltage_power_supply+1)/2,0.0f,1.0f);

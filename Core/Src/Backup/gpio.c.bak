@@ -58,23 +58,23 @@ void MX_GPIO_Init(void)
   __HAL_RCC_GPIOG_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, LED_B12_Pin|LED_B13_Pin|LED_B14_Pin|LED_B15_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, LED_CAN_ERR_Pin|LED_CAN_Pin|LED_B14_Pin|LED_B15_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOD, LED_D8_Pin|LED_D9_Pin|LED_D10_Pin|LED_D11_Pin
-                          |LED_D12_Pin|LED_D13_Pin|Motor_Enable_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOD, LED_TIM_Pin|LED_D9_Pin|LED_RUN_Pin|LED_SD_Pin
+                          |LED_D12_Pin|LED_ERR_Pin|Motor_Enable_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : LED_B12_Pin LED_B13_Pin LED_B14_Pin LED_B15_Pin */
-  GPIO_InitStruct.Pin = LED_B12_Pin|LED_B13_Pin|LED_B14_Pin|LED_B15_Pin;
+  /*Configure GPIO pins : LED_CAN_ERR_Pin LED_CAN_Pin LED_B14_Pin LED_B15_Pin */
+  GPIO_InitStruct.Pin = LED_CAN_ERR_Pin|LED_CAN_Pin|LED_B14_Pin|LED_B15_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : LED_D8_Pin LED_D9_Pin LED_D10_Pin LED_D11_Pin
-                           LED_D12_Pin LED_D13_Pin Motor_Enable_Pin */
-  GPIO_InitStruct.Pin = LED_D8_Pin|LED_D9_Pin|LED_D10_Pin|LED_D11_Pin
-                          |LED_D12_Pin|LED_D13_Pin|Motor_Enable_Pin;
+  /*Configure GPIO pins : LED_TIM_Pin LED_D9_Pin LED_RUN_Pin LED_SD_Pin
+                           LED_D12_Pin LED_ERR_Pin Motor_Enable_Pin */
+  GPIO_InitStruct.Pin = LED_TIM_Pin|LED_D9_Pin|LED_RUN_Pin|LED_SD_Pin
+                          |LED_D12_Pin|LED_ERR_Pin|Motor_Enable_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;

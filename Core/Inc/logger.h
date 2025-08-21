@@ -28,6 +28,17 @@ typedef struct __attribute__((packed, aligned(32))) LOGGER
     int16_t     LGRPM;      //RPM                           2Byte
     int16_t     LGIQ;       //100*Q current                 2Byte
     int16_t     LGID;       //100*D current                 2Byte
+    uint16_t    LGZERO;     //100*Zero electrical angle     2Byte
+    int16_t     LGDCIU;     //100*DC U Phase Current        2Byte
+    int16_t     LGDCIV;     //100*DC V Phase Current        2Byte
+    int16_t     LGDCIW;     //100*DC W Phase Current        2Byte
+    int16_t     LGVA;       //10*VA correction voltage      2Byte
+    int16_t     LGVB;       //10*VB correction voltage      2Byte
+    int16_t     LGVC;       //10*VC correction voltage      2Byte
+    uint16_t    LGRMSIU;    //100*IU RMS current            2Byte
+    uint16_t    LGRMSIV;    //100*IV RMS current            2Byte
+    uint16_t    LGRMSIW;    //100*IW RMS current            2Byte
+    uint16_t    LGLOGBUF;   //LOGBUF                        2Byte
 } logger_t;
 
 void set_one(logger_t log_struct[2][2]);
