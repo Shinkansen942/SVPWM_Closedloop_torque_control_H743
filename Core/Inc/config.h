@@ -21,7 +21,7 @@
 #endif
 
 // Motor number
-#define MOT_RR
+#define MOT_RL
 
 // Protections
 #define SOFTOCP 70
@@ -37,23 +37,24 @@
 #define PID_RAMP 100.0f
 #define PID_LIMIT 20.0f
 #define RAMP_TIME 1.0f
-#define HW_OC_TIME 2300 //should be in pwm cycles, 2300 is 100ms
-#define SOFT_OC_TIME 50 //should be in pwm cycles, 50 is 2ms
-#define ENC_TIME 50 //should be in pwm cycles, 50 is 2ms
-#define QKP 2.0f
-#define DKP 1.2f
-#define DERATE_START 9000 //should be in RPM, 1000 is 1000RPM
-#define DERATE_END 13000 //should be in RPM, 12000 is 12000RPM
+#define HW_OC_TIME      2300    //should be in pwm cycles, 2300 is 100ms
+#define SOFT_OC_TIME    50      //should be in pwm cycles, 50 is 2ms
+#define ENC_TIME        50      //should be in pwm cycles, 50 is 2ms
+#define QKP             1.0f
+#define DKP             0.8f
+#define DERATE_START    9000    //should be in RPM, 1000 is 1000RPM
+#define DERATE_END      13000   //should be in RPM, 12000 is 12000RPM
+#define RAMP_TIME       5       //time from 0 to 100 percent
 
 #define FREQ_11KHZ
 
 #ifdef FREQ_11KHZ
 #define FREQ 11000
 #define CCR 10908 // 11000Hz PWM frequency
-#define QKI 1.0f
-#define DKI 1.0f
-#define QTF 0.008f
-#define DTF 0.008f
+#define QKI 10.0f
+#define DKI 10.0f
+#define QTF 0.0008f
+#define DTF 0.0008f
 #define ABCTF 0.00008f
 #define RPMTF 0.1f
 #define DCTF 0.1f

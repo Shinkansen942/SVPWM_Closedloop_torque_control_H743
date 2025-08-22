@@ -201,6 +201,7 @@ const int16_t Inv_Conv[1024] = {-750,-696,-608,-553,-512,-479,-452,-428,-407,-38
 int16_t MCU_Conv[1024] = {0};
 const float DCVPLSB = 0.00897;     // DCVPLSB = 451*3.3/adc3_range 
 const float DCAPLSB = 0.0402930f;   // DCAPLSB = 3.3/20e-3/adc1_range 
+float max_ramp = 1/FREQ/RAMP_TIME;
 
 #ifdef TIMING
 int max_time = 0;
@@ -239,12 +240,9 @@ FDCAN_TxHeaderTypeDef StateHeader     = { .Identifier = CAN_ID_STATE+MOT_ID,.IdT
 FDCAN_TxHeaderTypeDef StatusHeader    = { .Identifier = CAN_ID_STATUS+MOT_ID,.IdType = FDCAN_STANDARD_ID,.TxFrameType = FDCAN_DATA_FRAME,
                                           .DataLength = FDCAN_DLC_BYTES_6,.ErrorStateIndicator = FDCAN_ESI_ACTIVE,.BitRateSwitch = FDCAN_BRS_OFF,
                                           .FDFormat = FDCAN_CLASSIC_CAN,.TxEventFifoControl = FDCAN_STORE_TX_EVENTS,.MessageMarker = 0x04};
-FDCAN_TxHeaderTypeDef QPerameterHeader = { .Identifier = CAN_ID_PERAM_Q+MOT_ID,.IdType = FDCAN_STANDARD_ID,.TxFrameType = FDCAN_DATA_FRAME,
+FDCAN_TxHeaderTypeDef PerameterHeader = { .Identifier = CAN_ID_PERAM+MOT_ID,.IdType = FDCAN_STANDARD_ID,.TxFrameType = FDCAN_DATA_FRAME,
                                           .DataLength = FDCAN_DLC_BYTES_8,.ErrorStateIndicator = FDCAN_ESI_ACTIVE,.BitRateSwitch = FDCAN_BRS_OFF,
                                           .FDFormat = FDCAN_CLASSIC_CAN,.TxEventFifoControl = FDCAN_STORE_TX_EVENTS,.MessageMarker = 0x05};
-FDCAN_TxHeaderTypeDef DPerameterHeader = { .Identifier = CAN_ID_PERAM_D+MOT_ID,.IdType = FDCAN_STANDARD_ID,.TxFrameType = FDCAN_DATA_FRAME,
-                                          .DataLength = FDCAN_DLC_BYTES_8,.ErrorStateIndicator = FDCAN_ESI_ACTIVE,.BitRateSwitch = FDCAN_BRS_OFF,
-                                          .FDFormat = FDCAN_CLASSIC_CAN,.TxEventFifoControl = FDCAN_STORE_TX_EVENTS,.MessageMarker = 0x06};
 FDCAN_RxHeaderTypeDef RxHeader1;
 // uint32_t can_txbuf_num = 0x1u;
 
@@ -266,9 +264,9 @@ pidc_t pid_controller_current_Id = {.P=DKP,.I=DKI,.D=PID_D,.output_ramp=PID_RAMP
 pidc_t pid_controller_current_OCP = {.P=1.0f,.I=1.0f,.D=PID_D,.output_ramp=PID_RAMP,.limit=PID_LIMIT,.error_prev=0,.output_prev=0,.integral_prev=0};
 pidc_t pid_controller_current_Ia = {.P=1.0f,.I=1.0f,.D=PID_D,.output_ramp=PID_RAMP,.limit=PID_LIMIT,.error_prev=0,.output_prev=0,.integral_prev=0};
 pidc_t pid_controller_current_Iabc[3] = {
-    {.P=3.0f,.I=QKI,.D=PID_D,.output_ramp=PID_RAMP,.limit=PID_LIMIT,.error_prev=0,.output_prev=0,.integral_prev=0},
-    {.P=3.0f,.I=QKI,.D=PID_D,.output_ramp=PID_RAMP,.limit=PID_LIMIT,.error_prev=0,.output_prev=0,.integral_prev=0},
-    {.P=3.0f,.I=QKI,.D=PID_D,.output_ramp=PID_RAMP,.limit=PID_LIMIT,.error_prev=0,.output_prev=0,.integral_prev=0}
+    {.P=QKP,.I=QKI,.D=PID_D,.output_ramp=PID_RAMP,.limit=PID_LIMIT,.error_prev=0,.output_prev=0,.integral_prev=0},
+    {.P=QKP,.I=QKI,.D=PID_D,.output_ramp=PID_RAMP,.limit=PID_LIMIT,.error_prev=0,.output_prev=0,.integral_prev=0},
+    {.P=QKP,.I=QKI,.D=PID_D,.output_ramp=PID_RAMP,.limit=PID_LIMIT,.error_prev=0,.output_prev=0,.integral_prev=0}
 };
 
 // arm_biquad_casd_df1_inst_f32 biquad_RPM_filter;
@@ -770,7 +768,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     }    
     if(inverter_state == STATE_RUNNING)
     {      
-      last_percent = percent_torque_requested;
+      float delta = percent_torque_requested - last_percent;
+      delta = _constrain(delta,-max_ramp,max_ramp);
+      last_percent = last_percent + delta;
       HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_SET);
     }
     else
@@ -1266,19 +1266,27 @@ void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo1ITs)
       }
       else if (RxHeader1.Identifier == 0x200)
       {
+        if(inverter_state == STATE_RUNNING)
+        {
+          return;
+        }
         float val;
         uint8_t bytes[4] = {RxData1[1],RxData1[2],RxData1[3],RxData1[4]};
         memcpy(&val,&bytes,sizeof(val));
         switch (RxData1[0])
         {
         case 0x1:
-          pid_controller_current_Iq.P = val;
+          pid_controller_current_Iq.P = val;  
           break;
 
         case 0x2:
           pid_controller_current_Iq.I = val;
           break;
         
+        case 0x3:
+          pid_controller_current_Iq.D = val;
+          break;
+
         case 0x11:
           pid_controller_current_Id.P = val;
           break;
@@ -1286,8 +1294,32 @@ void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo1ITs)
         case 0x12:
           pid_controller_current_Id.I = val;
           break;
+        
+        case 0x13:
+          pid_controller_current_Id.D = val;
 
         case 0x21:
+          for (size_t i = 0; i < 3; i++)
+          {
+            pid_controller_current_Iabc[i].P = val;
+          }
+          break;
+        
+        case 0x22:
+          for (size_t i = 0; i < 3; i++)
+          {
+            pid_controller_current_Iabc[i].I = val;
+          }
+          break;
+        
+        case 0x23:
+          for (size_t i = 0; i < 3; i++)
+          {
+            pid_controller_current_Iabc[i].D = val;
+          }
+          break;
+
+        case 0x31:
           zero_electric_angle = val;
           break;
 
@@ -1524,28 +1556,62 @@ void CAN_Send_Heartbeat(void)
 void CAN_Send_Perameter(void)
 {
   static uint8_t count;
-  if(count%10)
-  {
-    count++;
-    return;
-  }
-  count = 0;
   count++;
-  uint8_t QPeramData[8] = {0};
-  uint8_t Qbytes[2][4] = {{0}};
-  uint8_t DPeramData[8] = {0};
-  uint8_t Dbytes[2][4] = {{0}};
-  memcpy(&Qbytes[0],&pid_controller_current_Iq.P,4);
-  memcpy(&Qbytes[1],&pid_controller_current_Iq.I,4);
-  memcpy(&Dbytes[0],&pid_controller_current_Id.P,4);
-  memcpy(&Dbytes[1],&pid_controller_current_Id.I,4);
-  for (size_t i = 0; i < 8; i++)
+  if(count == 9)
   {
-    QPeramData[i] = Qbytes[i/4][i%4];
-    DPeramData[i] = Dbytes[i/4][i%4];
+    count = 0;
+  }
+  uint8_t PeramData[5] = {0};
+  PeramData[0] = count;
+  uint8_t bytes[4] = {0};
+  float val = 0.0f;
+  switch(count)
+  {
+    case 0:
+      val = pid_controller_current_Iq.P;
+      break;
+
+    case 1:
+      val = pid_controller_current_Iq.I;
+      break;
+    
+    case 2:
+      val = pid_controller_current_Iq.D;
+      break;
+
+    case 3:
+      val = pid_controller_current_Id.P;
+      break;
+
+    case 4:
+      val = pid_controller_current_Id.I;
+      break;
+    
+    case 5:
+      val = pid_controller_current_Id.D;
+      break;
+
+    case 6:
+      val = pid_controller_current_Iabc[0].P;
+      break;
+
+    case 7:
+      val = pid_controller_current_Iabc[0].I;
+      break;
+
+    case 8:
+      val = pid_controller_current_Iabc[0].D;
+      break;
+
+    default:
+      break;
+  }
+  memcpy(&bytes,&val,4);
+  for (size_t i = 0; i < 4; i++)
+  {
+    PeramData[i+1] = bytes[i];
   }  
-  CAN1_SetMsg(&QPerameterHeader,QPeramData);
-  CAN1_SetMsg(&DPerameterHeader,DPeramData);
+  CAN1_SetMsg(&PerameterHeader,PeramData);
 }
 
 /* USER CODE END 4 */
