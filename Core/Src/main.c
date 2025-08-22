@@ -239,9 +239,12 @@ FDCAN_TxHeaderTypeDef StateHeader     = { .Identifier = CAN_ID_STATE+MOT_ID,.IdT
 FDCAN_TxHeaderTypeDef StatusHeader    = { .Identifier = CAN_ID_STATUS+MOT_ID,.IdType = FDCAN_STANDARD_ID,.TxFrameType = FDCAN_DATA_FRAME,
                                           .DataLength = FDCAN_DLC_BYTES_6,.ErrorStateIndicator = FDCAN_ESI_ACTIVE,.BitRateSwitch = FDCAN_BRS_OFF,
                                           .FDFormat = FDCAN_CLASSIC_CAN,.TxEventFifoControl = FDCAN_STORE_TX_EVENTS,.MessageMarker = 0x04};
-FDCAN_TxHeaderTypeDef PerameterHeader = { .Identifier = CAN_ID_PERAM+MOT_ID,.IdType = FDCAN_STANDARD_ID,.TxFrameType = FDCAN_DATA_FRAME,
+FDCAN_TxHeaderTypeDef QPerameterHeader = { .Identifier = CAN_ID_PERAM_Q+MOT_ID,.IdType = FDCAN_STANDARD_ID,.TxFrameType = FDCAN_DATA_FRAME,
                                           .DataLength = FDCAN_DLC_BYTES_8,.ErrorStateIndicator = FDCAN_ESI_ACTIVE,.BitRateSwitch = FDCAN_BRS_OFF,
                                           .FDFormat = FDCAN_CLASSIC_CAN,.TxEventFifoControl = FDCAN_STORE_TX_EVENTS,.MessageMarker = 0x05};
+FDCAN_TxHeaderTypeDef DPerameterHeader = { .Identifier = CAN_ID_PERAM_D+MOT_ID,.IdType = FDCAN_STANDARD_ID,.TxFrameType = FDCAN_DATA_FRAME,
+                                          .DataLength = FDCAN_DLC_BYTES_8,.ErrorStateIndicator = FDCAN_ESI_ACTIVE,.BitRateSwitch = FDCAN_BRS_OFF,
+                                          .FDFormat = FDCAN_CLASSIC_CAN,.TxEventFifoControl = FDCAN_STORE_TX_EVENTS,.MessageMarker = 0x06};
 FDCAN_RxHeaderTypeDef RxHeader1;
 // uint32_t can_txbuf_num = 0x1u;
 
@@ -1520,20 +1523,29 @@ void CAN_Send_Heartbeat(void)
 
 void CAN_Send_Perameter(void)
 {
-  uint8_t PeramData[8] = {0};
-  uint16_t QP_100 = (uint16_t) roundf(pid_controller_current_Iq.P*100);
-  uint16_t QI_100 = (uint16_t) roundf(pid_controller_current_Iq.I*100);
-  uint16_t DP_100 = (uint16_t) roundf(pid_controller_current_Id.P*100);
-  uint16_t DI_100 = (uint16_t) roundf(pid_controller_current_Id.I*100);
-  PeramData[0] = QP_100;
-  PeramData[1] = QP_100 >> 8;
-  PeramData[2] = QI_100;
-  PeramData[3] = QI_100 >> 8;
-  PeramData[4] = DP_100;
-  PeramData[5] = DP_100 >> 8;
-  PeramData[6] = DI_100;
-  PeramData[7] = DI_100 >> 8;
-  CAN1_SetMsg(&PerameterHeader,&PeramData);
+  static uint8_t count;
+  if(count%10)
+  {
+    count++;
+    return;
+  }
+  count = 0;
+  count++;
+  uint8_t QPeramData[8] = {0};
+  uint8_t Qbytes[2][4] = {{0}};
+  uint8_t DPeramData[8] = {0};
+  uint8_t Dbytes[2][4] = {{0}};
+  memcpy(&Qbytes[0],&pid_controller_current_Iq.P,4);
+  memcpy(&Qbytes[1],&pid_controller_current_Iq.I,4);
+  memcpy(&Dbytes[0],&pid_controller_current_Id.P,4);
+  memcpy(&Dbytes[1],&pid_controller_current_Id.I,4);
+  for (size_t i = 0; i < 8; i++)
+  {
+    QPeramData[i] = Qbytes[i/4][i%4];
+    DPeramData[i] = Dbytes[i/4][i%4];
+  }  
+  CAN1_SetMsg(&QPerameterHeader,QPeramData);
+  CAN1_SetMsg(&DPerameterHeader,DPeramData);
 }
 
 /* USER CODE END 4 */
