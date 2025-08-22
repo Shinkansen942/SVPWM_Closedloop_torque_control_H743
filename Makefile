@@ -163,7 +163,8 @@ C_INCLUDES =  \
 -IFATFS/Target \
 -IFATFS/App \
 -IMiddlewares/Third_Party/FatFs/src \
--IMiddlewares/ST/ARM/DSP/Inc
+-IMiddlewares/ST/ARM/DSP/Inc \
+-ICore/Inc/Custom
 
 
 # compile gcc flags

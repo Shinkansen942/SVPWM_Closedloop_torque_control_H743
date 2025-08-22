@@ -44,7 +44,7 @@
 #define DKP             0.8f
 #define DERATE_START    9000    //should be in RPM, 1000 is 1000RPM
 #define DERATE_END      13000   //should be in RPM, 12000 is 12000RPM
-#define RAMP_TIME       5       //time from 0 to 100 percent
+#define CMD_RAMP_TIME       5.0f    //time from 0 to 100 percent
 
 #define FREQ_11KHZ
 

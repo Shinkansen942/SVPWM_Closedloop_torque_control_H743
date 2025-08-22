@@ -31,9 +31,9 @@ void MX_RTC_Init(void)
 {
 
   /* USER CODE BEGIN RTC_Init 0 */
+  #ifdef SET_DATE_TO_ZERO_ON_RESET
   RTC_TimeTypeDef sTime;
   RTC_DateTypeDef sDate;
-  #ifdef SET_DATE_TO_ZERO_ON_RESET
   /* USER CODE END RTC_Init 0 */
 
   RTC_TimeTypeDef sTime = {0};

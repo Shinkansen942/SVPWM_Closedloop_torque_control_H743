@@ -75,31 +75,34 @@ endif
 ######################################
 # C sources
 C_SOURCES =  \
+Core/Src/Custom/as5048a.c \
+Core/Src/Custom/current_sense.c \
+Core/Src/Custom/foc_utils.c \
+Core/Src/Custom/inv_can.c \
+Core/Src/Custom/inv_func.c \
+Core/Src/Custom/inv_main.c \
+Core/Src/Custom/inverter_state.c \
+Core/Src/Custom/logger.c \
+Core/Src/Custom/lowpass_filter.c \
+Core/Src/Custom/motor_control.c \
+Core/Src/Custom/pid.c \
+Core/Src/Custom/sincos_encoder.c \
+Core/Src/Custom/test_file.c \
 Core/Src/adc.c \
-Core/Src/as5048a.c \
 Core/Src/crc.c \
-Core/Src/current_sense.c \
 Core/Src/dma.c \
 Core/Src/fdcan.c \
-Core/Src/foc_utils.c \
 Core/Src/gpio.c \
 Core/Src/i2c.c \
-Core/Src/inverter_state.c \
-Core/Src/logger.c \
-Core/Src/lowpass_filter.c \
 Core/Src/main.c \
 Core/Src/mdma.c \
-Core/Src/motor_control.c \
-Core/Src/pid.c \
 Core/Src/rtc.c \
 Core/Src/sdmmc.c \
-Core/Src/sincos_encoder.c \
 Core/Src/stm32h7xx_hal_msp.c \
 Core/Src/stm32h7xx_it.c \
 Core/Src/syscalls.c \
 Core/Src/sysmem.c \
 Core/Src/system_stm32h7xx.c \
-Core/Src/test_file.c \
 Core/Src/tim.c \
 Core/Src/usart.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal.c \
@@ -239,6 +242,7 @@ AS_INCLUDES = \
 # C includes
 C_INCLUDES =  \
 -ICore/Inc \
+-ICore/Inc/Custom \
 -IDrivers/CMSIS/Device/ST/STM32H7xx/Include \
 -IDrivers/CMSIS/Include \
 -IDrivers/STM32H7xx_HAL_Driver/Inc \
