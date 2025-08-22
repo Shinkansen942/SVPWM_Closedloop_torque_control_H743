@@ -333,10 +333,10 @@ int main(void)
   for (size_t i = 0; i < 1024; i++)
   {
     Mot_Conv[i] = (int16_t)10*((float)(1650-(3300*i/1024))/Mot_Curr/3.795-1000/3.795);
-    if (Mot_Conv[i] < 0)
-    {
-      Mot_Conv[i] = 0;
-    }
+    // if (Mot_Conv[i] < 0)
+    // {
+    //   Mot_Conv[i] = 0;
+    // }
   }
 
   // arm_biquad_cascade_df1_init_f32(&biquad_RPM_filter, NUM_SECTIONS, biquad_RPM_coeffs, biquad_RPM_states);
@@ -1304,10 +1304,10 @@ void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo1ITs)
           for (size_t i = 0; i < 1024; i++)
           {
             Mot_Conv[i] = (int16_t)10*((float)(1650-(3300*i/1024))/Mot_Curr/3.795-1000/3.795);
-            if (Mot_Conv[i] < 0)
-            {
-              Mot_Conv[i] = 0;
-            }
+            // if (Mot_Conv[i] < 0)
+            // {
+            //   Mot_Conv[i] = 0;
+            // }
           }
         
         default:
