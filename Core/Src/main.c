@@ -201,7 +201,7 @@ const int16_t Inv_Conv[1024] = {-750,-696,-608,-553,-512,-479,-452,-428,-407,-38
 int16_t MCU_Conv[1024] = {0};
 const float DCVPLSB = 0.00897;     // DCVPLSB = 451*3.3/adc3_range 
 const float DCAPLSB = 0.0402930f;   // DCAPLSB = 3.3/20e-3/adc1_range 
-float max_ramp = 1/FREQ/RAMP_TIME;
+float max_ramp = 1/FREQ/RAMP_TIME_DERATE;
 
 #ifdef TIMING
 int max_time = 0;
@@ -259,14 +259,14 @@ lpf_t filter_current_Iabc[3] = {{.Tf = ABCTF,.y_prev=0.0f},{.Tf = ABCTF,.y_prev=
 lpf_t filter_crrent_DC_Iabc[3] = {{.Tf = DCTF,.y_prev=0.0f},{.Tf = DCTF,.y_prev=0.0f},{.Tf = DCTF,.y_prev=0.0f}}; //Tf=2ms
 lpf_t filter_RPM = {.Tf=RPMTF,.y_prev=0.0f};
 lpf_t filter_report_torque = {.Tf=0.008f,.y_prev=0.0f}; //Tf=100ms
-pidc_t pid_controller_current_Iq = {.P=QKP,.I=QKI,.D=PID_D,.output_ramp=PID_RAMP,.limit=PID_LIMIT,.error_prev=0,.output_prev=0,.integral_prev=0};
-pidc_t pid_controller_current_Id = {.P=DKP,.I=DKI,.D=PID_D,.output_ramp=PID_RAMP,.limit=PID_LIMIT,.error_prev=0,.output_prev=0,.integral_prev=0};
+pidc_t pid_controller_current_Iq = {.P=QKP,.I=QKI,.D=QKD,.output_ramp=PID_RAMP,.limit=PID_LIMIT,.error_prev=0,.output_prev=0,.integral_prev=0};
+pidc_t pid_controller_current_Id = {.P=DKP,.I=DKI,.D=DKD,.output_ramp=PID_RAMP,.limit=PID_LIMIT,.error_prev=0,.output_prev=0,.integral_prev=0};
 pidc_t pid_controller_current_OCP = {.P=1.0f,.I=1.0f,.D=PID_D,.output_ramp=PID_RAMP,.limit=PID_LIMIT,.error_prev=0,.output_prev=0,.integral_prev=0};
 pidc_t pid_controller_current_Ia = {.P=1.0f,.I=1.0f,.D=PID_D,.output_ramp=PID_RAMP,.limit=PID_LIMIT,.error_prev=0,.output_prev=0,.integral_prev=0};
 pidc_t pid_controller_current_Iabc[3] = {
-    {.P=QKP,.I=QKI,.D=PID_D,.output_ramp=PID_RAMP,.limit=PID_LIMIT,.error_prev=0,.output_prev=0,.integral_prev=0},
-    {.P=QKP,.I=QKI,.D=PID_D,.output_ramp=PID_RAMP,.limit=PID_LIMIT,.error_prev=0,.output_prev=0,.integral_prev=0},
-    {.P=QKP,.I=QKI,.D=PID_D,.output_ramp=PID_RAMP,.limit=PID_LIMIT,.error_prev=0,.output_prev=0,.integral_prev=0}
+    {.P=DCKP,.I=DCKI,.D=PID_D,.output_ramp=PID_RAMP,.limit=PID_LIMIT,.error_prev=0,.output_prev=0,.integral_prev=0},
+    {.P=DCKP,.I=DCKI,.D=PID_D,.output_ramp=PID_RAMP,.limit=PID_LIMIT,.error_prev=0,.output_prev=0,.integral_prev=0},
+    {.P=DCKP,.I=DCKI,.D=PID_D,.output_ramp=PID_RAMP,.limit=PID_LIMIT,.error_prev=0,.output_prev=0,.integral_prev=0}
 };
 
 // arm_biquad_casd_df1_inst_f32 biquad_RPM_filter;
@@ -771,6 +771,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
       float delta = percent_torque_requested - last_percent;
       delta = _constrain(delta,-max_ramp,max_ramp);
       last_percent = last_percent + delta;
+      last_percent = percent_torque_requested;
       HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_SET);
     }
     else
@@ -887,10 +888,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     
     float Id,Iq;
     cal_Idq(current_phase, _electricalAngle(angle_now, pole_pairs), &Id, &Iq);
-    filtered_Iq=LowPassFilter_operator(Iq,&filter_current_Iq);
-    filtered_Id=LowPassFilter_operator(Id,&filter_current_Id);
-    // filtered_Iq = Iq;
-    // filtered_Id = Id;
+    // filtered_Iq=LowPassFilter_operator(Iq,&filter_current_Iq);
+    // filtered_Id=LowPassFilter_operator(Id,&filter_current_Id);
+    filtered_Iq = Iq;
+    filtered_Id = Id;
     Ia = sqrt(filtered_Id*filtered_Id+filtered_Iq*filtered_Iq);
 
     #ifndef SIXSTEP
@@ -1297,6 +1298,7 @@ void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo1ITs)
         
         case 0x13:
           pid_controller_current_Id.D = val;
+          break;
 
         case 0x21:
           for (size_t i = 0; i < 3; i++)
@@ -1562,50 +1564,62 @@ void CAN_Send_Perameter(void)
     count = 0;
   }
   uint8_t PeramData[5] = {0};
-  PeramData[0] = count;
+  PeramData[0] = count+1;
   uint8_t bytes[4] = {0};
   float val = 0.0f;
+  uint8_t head = 0x0;
   switch(count)
   {
     case 0:
+      head = 0x1;
       val = pid_controller_current_Iq.P;
       break;
 
     case 1:
+      head = 0x2;
       val = pid_controller_current_Iq.I;
       break;
     
     case 2:
+      head = 0x3;
       val = pid_controller_current_Iq.D;
       break;
 
     case 3:
+      head = 0x11;
       val = pid_controller_current_Id.P;
       break;
 
     case 4:
+      head = 0x12;
       val = pid_controller_current_Id.I;
       break;
     
     case 5:
+      head = 0x13;
       val = pid_controller_current_Id.D;
       break;
 
     case 6:
+      head = 0x21;
       val = pid_controller_current_Iabc[0].P;
       break;
 
     case 7:
+      head = 0x22;
       val = pid_controller_current_Iabc[0].I;
       break;
 
     case 8:
+      head = 0x23;
       val = pid_controller_current_Iabc[0].D;
       break;
 
     default:
       break;
   }
+  PeramData[0] = head;
+  PeramData[0] = count+1;
   memcpy(&bytes,&val,4);
   for (size_t i = 0; i < 4; i++)
   {

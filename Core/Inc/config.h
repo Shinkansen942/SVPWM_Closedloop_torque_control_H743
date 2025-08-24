@@ -40,19 +40,23 @@
 #define HW_OC_TIME      2300    //should be in pwm cycles, 2300 is 100ms
 #define SOFT_OC_TIME    50      //should be in pwm cycles, 50 is 2ms
 #define ENC_TIME        50      //should be in pwm cycles, 50 is 2ms
-#define QKP             1.0f
-#define DKP             0.8f
-#define DERATE_START    9000    //should be in RPM, 1000 is 1000RPM
-#define DERATE_END      13000   //should be in RPM, 12000 is 12000RPM
-#define RAMP_TIME       5       //time from 0 to 100 percent
+#define QKP             2.4f
+#define DKP             1.92f
+#define QKI             1.5f
+#define DKI             1.5f
+#define QKD             0.002f
+#define DKD             0.002f
+#define DCKP            1.0f
+#define DCKI            1.0f
+#define DERATE_START        9000    //should be in RPM, 1000 is 1000RPM
+#define DERATE_END          13000   //should be in RPM, 12000 is 12000RPM
+#define RAMP_TIME_DERATE    5       //time from 0 to 100 percent
 
-#define FREQ_11KHZ
+#define FREQ_23KHZ
 
 #ifdef FREQ_11KHZ
 #define FREQ 11000
 #define CCR 10908 // 11000Hz PWM frequency
-#define QKI 10.0f
-#define DKI 10.0f
 #define QTF 0.0008f
 #define DTF 0.0008f
 #define ABCTF 0.00008f
@@ -63,8 +67,6 @@
 #ifdef FREQ_13KHZ
 #define FREQ 13000
 #define CCR 9230 // 11000Hz PWM frequency
-#define QKI 1.27f
-#define DKI 1.27f
 #define QTF 0.000677f
 #define DTF 0.000677f
 #define ABCTF 0.0000677f
@@ -75,8 +77,6 @@
 #ifdef FREQ_23KHZ
 #define FREQ 23000
 #define CCR 5127 // 11000Hz PWM frequency
-#define QKI 0.717f
-#define DKI 0.717f
 #define QTF 0.0003826f
 #define DTF 0.0003826f
 #define ABCTF 0.00003826f
