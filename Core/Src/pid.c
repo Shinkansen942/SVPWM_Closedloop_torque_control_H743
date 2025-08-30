@@ -54,3 +54,8 @@ void PID_reset(pidc_t* pid)
 	pid->output_prev = 0;
 	pid->integral_prev = 0;
 }
+
+void PID_integral_reset(pidc_t* pid)
+{
+	pid->integral_prev = 0;
+}

@@ -21,4 +21,5 @@ typedef struct PIDController{
 } pidc_t;
 float PID_operator(float error, pidc_t* pid);
 void PID_reset(pidc_t* pid);
+void PID_integral_reset(pidc_t* pid);
 #endif /* INC_PID_H_ */
