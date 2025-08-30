@@ -15,7 +15,7 @@ float LowPassFilter_operator(float x, struct LowPassFilter* filter){
 		filter->y_prev = y; // Update the previous value only if y is a valid number
 	}
 	
-	return y;
+	return filter->y_prev;
 }
 
 void LowPassFilter_reset(lpf_t* filter)

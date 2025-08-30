@@ -888,10 +888,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     
     float Id,Iq;
     cal_Idq(current_phase, _electricalAngle(angle_now, pole_pairs), &Id, &Iq);
-    // filtered_Iq=LowPassFilter_operator(Iq,&filter_current_Iq);
-    // filtered_Id=LowPassFilter_operator(Id,&filter_current_Id);
-    filtered_Iq = Iq;
-    filtered_Id = Id;
+    filtered_Iq=LowPassFilter_operator(Iq,&filter_current_Iq);
+    filtered_Id=LowPassFilter_operator(Id,&filter_current_Id);
+    // filtered_Iq = Iq;
+    // filtered_Id = Id;
     Ia = sqrt(filtered_Id*filtered_Id+filtered_Iq*filtered_Iq);
 
     #ifndef SIXSTEP

@@ -21,7 +21,7 @@
 #endif
 
 // Motor number
-#define MOT_RL
+#define MOT_RR
 
 // Protections
 #define SOFTOCP 70
@@ -34,9 +34,9 @@
 #define PID_P 1.0f
 #define PID_I 0.02f
 #define PID_D 0.0f
-#define PID_RAMP 100.0f
+#define PID_RAMP 1000.0f
 #define PID_LIMIT 20.0f
-#define RAMP_TIME 1.0f
+// #define RAMP_TIME 1.0f
 #define HW_OC_TIME      2300    //should be in pwm cycles, 2300 is 100ms
 #define SOFT_OC_TIME    50      //should be in pwm cycles, 50 is 2ms
 #define ENC_TIME        50      //should be in pwm cycles, 50 is 2ms
@@ -46,6 +46,12 @@
 #define DKI             1.5f
 #define QKD             0.002f
 #define DKD             0.002f
+// #define QKP             1.5f
+// #define DKP             0.9f
+// #define QKI             0.625f
+// #define DKI             0.625f
+// #define QKD             0.0f
+// #define DKD             0.0f
 #define DCKP            1.0f
 #define DCKI            1.0f
 #define DERATE_START        9000    //should be in RPM, 1000 is 1000RPM
@@ -66,7 +72,7 @@
 
 #ifdef FREQ_13KHZ
 #define FREQ 13000
-#define CCR 9230 // 11000Hz PWM frequency
+#define CCR 9230 // 13000Hz PWM frequency
 #define QTF 0.000677f
 #define DTF 0.000677f
 #define ABCTF 0.0000677f
@@ -76,7 +82,7 @@
 
 #ifdef FREQ_23KHZ
 #define FREQ 23000
-#define CCR 5127 // 11000Hz PWM frequency
+#define CCR 5127 // 23000Hz PWM frequency
 #define QTF 0.0003826f
 #define DTF 0.0003826f
 #define ABCTF 0.00003826f
