@@ -770,7 +770,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     {      
       float delta = percent_torque_requested - last_percent;
       delta = _constrain(delta,-max_ramp,max_ramp);
-      last_percent = last_percent + delta;
       if(last_percent != 0.0f && percent_torque_requested == 0.0f)
       {
         PID_integral_reset(&pid_controller_current_Iq);
@@ -780,6 +779,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         PID_integral_reset(&pid_controller_current_Iabc[2]);
         last_percent = 0.0f;
       }
+      last_percent = last_percent + delta;
       last_percent = percent_torque_requested;
       HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_SET);
     }
