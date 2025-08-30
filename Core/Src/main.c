@@ -774,9 +774,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
       {
         PID_integral_reset(&pid_controller_current_Iq);
         PID_integral_reset(&pid_controller_current_Id);
-        PID_integral_reset(&pid_controller_current_Iabc[0]);
-        PID_integral_reset(&pid_controller_current_Iabc[1]);
-        PID_integral_reset(&pid_controller_current_Iabc[2]);
+        for (size_t i = 0; i < 3; i++)
+        {
+          PID_integral_reset(&pid_controller_current_Iabc[i]);
+        }
+        
         last_percent = 0.0f;
       }
       last_percent = last_percent + delta;
@@ -794,6 +796,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
       PID_reset(&pid_controller_current_Iq);
       PID_reset(&pid_controller_current_OCP);
       PID_reset(&pid_controller_current_Ia);
+      for (size_t i = 0; i < 3; i++)
+      {
+        PID_reset(&pid_controller_current_Iabc[i]);
+      }
+      
       // pid_controller_current_Iq.output_prev = dir*filtered_RPM/electrical_constant;
     }
     
