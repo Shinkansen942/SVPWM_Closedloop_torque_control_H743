@@ -22,6 +22,8 @@
 
 // Motor number
 #define MOT_RR
+// #define MOT_RL 
+// #define MOT_CAL
 
 // Protections
 #define SOFTOCP 70
@@ -96,8 +98,8 @@
 #define FILENAME "MOT_CAL_%04d%02d%02d_%02d%02d%02d_NEW_V2.3.bin"
 #else
 #ifdef MOT_CAL
-#define ZERO_ELECTRIC_ANGLE 3.43f //should be in radians
-#define MOT_CURR 1.0f
+#define ZERO_ELECTRIC_ANGLE 2.5f //should be in radians
+#define MOT_CURR 1.084f
 #define FILENAME "MOT_CAL_%04d%02d%02d_%02d%02d%02d_NEW_V2.3.bin"
 #endif
 #ifdef MOT_RR
