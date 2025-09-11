@@ -202,6 +202,7 @@ int16_t MCU_Conv[1024] = {0};
 const float DCVPLSB = 0.00897;     // DCVPLSB = 451*3.3/adc3_range 
 const float DCAPLSB = 0.0402930f;   // DCAPLSB = 3.3/20e-3/adc1_range 
 float max_ramp = 1/FREQ/RAMP_TIME_DERATE;
+uint8_t fast_stop_enable = 0;
 
 #ifdef TIMING
 int max_time = 0;
@@ -772,13 +773,15 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
       delta = _constrain(delta,-max_ramp,max_ramp);
       if(last_percent != 0.0f && percent_torque_requested == 0.0f)
       {
-        PID_integral_reset(&pid_controller_current_Iq);
-        PID_integral_reset(&pid_controller_current_Id);
-        for (size_t i = 0; i < 3; i++)
+        if(fast_stop_enable)
         {
-          PID_integral_reset(&pid_controller_current_Iabc[i]);
+          PID_integral_reset(&pid_controller_current_Iq);
+          PID_integral_reset(&pid_controller_current_Id);
+          for (size_t i = 0; i < 3; i++)
+          {
+            PID_integral_reset(&pid_controller_current_Iabc[i]);
+          }
         }
-        
         last_percent = 0.0f;
       }
       last_percent = last_percent + delta;
@@ -1339,6 +1342,10 @@ void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo1ITs)
 
         case 0x31:
           zero_electric_angle = val;
+          break;
+        
+        case 0x41:
+          fast_stop_enable = (uint8_t) val;
           break;
 
         default:

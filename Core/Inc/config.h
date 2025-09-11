@@ -21,8 +21,8 @@
 #endif
 
 // Motor number
-#define MOT_RR
-// #define MOT_RL 
+// #define MOT_RR
+#define MOT_RL 
 // #define MOT_CAL
 
 // Protections
