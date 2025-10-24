@@ -36,7 +36,7 @@
 #define PID_P 1.0f
 #define PID_I 0.02f
 #define PID_D 0.0f
-#define PID_RAMP 1000.0f
+#define PID_RAMP 10000.0f
 #define PID_LIMIT 20.0f
 // #define RAMP_TIME 1.0f
 #define HW_OC_TIME      2300    //should be in pwm cycles, 2300 is 100ms
@@ -46,8 +46,8 @@
 #define DKP             1.92f
 #define QKI             1.5f
 #define DKI             1.5f
-#define QKD             0.002f
-#define DKD             0.002f
+#define QKD             0.0f
+#define DKD             0.0f
 // #define QKP             1.5f
 // #define DKP             0.9f
 // #define QKI             0.625f
@@ -95,22 +95,22 @@
 #ifdef CAL_ZERO_ANGLE
 #define ZERO_ELECTRIC_ANGLE 0.0f //should be in radians
 #define MOT_CURR 1.0f
-#define FILENAME "MOT_CAL_%04d%02d%02d_%02d%02d%02d_NEW_V2.3.bin"
+#define FILENAME "MOT_CAL_%04d%02d%02d_%02d%02d%02d_NEW_V2_4.bin"
 #else
 #ifdef MOT_CAL
 #define ZERO_ELECTRIC_ANGLE 2.5f //should be in radians
 #define MOT_CURR 1.084f
-#define FILENAME "MOT_CAL_%04d%02d%02d_%02d%02d%02d_NEW_V2.3.bin"
+#define FILENAME "MOT_CAL_%04d%02d%02d_%02d%02d%02d_NEW_V2_4.bin"
 #endif
 #ifdef MOT_RR
 #define ZERO_ELECTRIC_ANGLE 1.28f //should be in radians
 #define MOT_CURR 0.907f
-#define FILENAME "MOT_RR_%04d%02d%02d_%02d%02d%02d_NEW_V2.3.bin"
+#define FILENAME "MOT_RR_%04d%02d%02d_%02d%02d%02d_NEW_V2_4.bin"
 #endif
 #ifdef MOT_RL
 #define ZERO_ELECTRIC_ANGLE 4.74f //should be in radians
 #define MOT_CURR 0.991f
-#define FILENAME "MOT_RL_%04d%02d%02d_%02d%02d%02d_NEW_V2.3.bin"
+#define FILENAME "MOT_RL_%04d%02d%02d_%02d%02d%02d_NEW_V2_4.bin"
 #endif
 #endif
 
