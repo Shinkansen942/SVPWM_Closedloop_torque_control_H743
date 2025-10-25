@@ -75,6 +75,9 @@ endif
 ######################################
 # C sources
 C_SOURCES =  \
+Core/Src/PLL/PLL.c \
+Core/Src/PLL/PLL_data.c \
+Core/Src/PLL/rt_nonfinite.c \
 Core/Src/adc.c \
 Core/Src/as5048a.c \
 Core/Src/crc.c \
@@ -239,6 +242,7 @@ AS_INCLUDES = \
 # C includes
 C_INCLUDES =  \
 -ICore/Inc \
+-ICore/Inc/PLL \
 -IDrivers/CMSIS/Device/ST/STM32H7xx/Include \
 -IDrivers/CMSIS/Include \
 -IDrivers/STM32H7xx_HAL_Driver/Inc \

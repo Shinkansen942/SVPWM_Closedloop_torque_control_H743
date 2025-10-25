@@ -798,9 +798,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     indexStatus++;
     CAN_Timer++;
     
-
-    Get_Encoder_Angle(ADC2_arr,&angle_now);
+    float speed_rad, angle_pll;
+    Get_Encoder_Angle(ADC2_arr,&angle_now,&speed_rad,&angle_pll);
     int8_t enc_err = 0;
+    // angle_now = angle_pll;
     if(angle_now != angle_now)
     {
       enc_err = 1;
@@ -895,6 +896,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
     Iq_controller_output=PID_operator(target_Iq-filtered_Iq,&pid_controller_current_Iq);
     Id_controller_output=PID_operator(-filtered_Id,&pid_controller_current_Id);
+    
     float Iabc_controller_output[3] = {0.0f};
     for (size_t i = 0; i < 3; i++)
     {
@@ -1027,8 +1029,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     log_buf[wr_log_buf_num][wr_log_index%3600].LGDCIU = (int16_t) roundf(current_phase_dc[0]*100);
     log_buf[wr_log_buf_num][wr_log_index%3600].LGDCIV = (int16_t) roundf(current_phase_dc[1]*100);
     log_buf[wr_log_buf_num][wr_log_index%3600].LGDCIW = (int16_t) roundf(current_phase_dc[2]*100);
-    log_buf[wr_log_buf_num][wr_log_index%3600].LGVA = (int16_t) roundf(Iabc_controller_output[0]*10);
-    log_buf[wr_log_buf_num][wr_log_index%3600].LGVB = (int16_t) roundf(Iabc_controller_output[1]*10);
+    log_buf[wr_log_buf_num][wr_log_index%3600].LGVA = (int16_t) roundf(angle_pll*10);
+    log_buf[wr_log_buf_num][wr_log_index%3600].LGVB = (int16_t) roundf(speed_rad*10);
     log_buf[wr_log_buf_num][wr_log_index%3600].LGVC = (int16_t) roundf(Iabc_controller_output[2]*10);
     log_buf[wr_log_buf_num][wr_log_index%3600].LGRMSIU = (uint16_t) roundf(RMS_sum[0]/100);
     log_buf[wr_log_buf_num][wr_log_index%3600].LGRMSIV = (uint16_t) roundf(RMS_sum[1]/100);

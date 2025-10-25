@@ -42,10 +42,18 @@
 #define HW_OC_TIME      2300    //should be in pwm cycles, 2300 is 100ms
 #define SOFT_OC_TIME    50      //should be in pwm cycles, 50 is 2ms
 #define ENC_TIME        50      //should be in pwm cycles, 50 is 2ms
+
 #define QKP             2.4f
 #define DKP             1.92f
 #define QKI             1.5f
 #define DKI             1.5f
+
+//MATLAB tuned PID values
+// #define QKP             0.226f
+// #define DKP             0.1725f
+// #define QKI             72.45f
+// #define DKI             72.45f
+
 #define QKD             0.0f
 #define DKD             0.0f
 // #define QKP             1.5f
@@ -85,8 +93,8 @@
 #ifdef FREQ_23KHZ
 #define FREQ 23000
 #define CCR 5127 // 23000Hz PWM frequency
-#define QTF 0.0003826f
-#define DTF 0.0003826f
+#define QTF 0.00003826f
+#define DTF 0.00003826f
 #define ABCTF 0.00003826f
 #define RPMTF 0.04783f
 #define DCTF 0.04783f
