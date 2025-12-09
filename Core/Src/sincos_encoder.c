@@ -9,5 +9,5 @@ void Get_Encoder_Angle(uint16_t *val_arr, float *angle_el,float_t *speed_rpm, fl
     
     *angle_el = _normalizeAngle(_atan2(_sv,_cv));  
 
-    // PLL_step((real_T)_sv,(real_T)_cv, false, rad_pll, speed_rpm);
+    PLL_step((real_T)_sv,(real_T)_cv, false, rad_pll, speed_rpm);
 }

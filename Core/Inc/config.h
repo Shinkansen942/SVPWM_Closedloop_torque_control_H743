@@ -6,7 +6,7 @@
 // #define CAL_ZERO_ANGLE  //undefine to disable zero electrical angle calibration
 // #define TIMING          //undefine to disable loop timing
 #define CAN_OT_FAULT    //undefine to disable CAN OVERTIME Falut
-#define RMSOCP          //undefine to disable RMS overcurrent protection
+// #define RMSOCP          //undefine to disable RMS overcurrent protection
 // #define WAIT_GATE_READY //undefine to not wait for gate ready signal
 // #define OVERRIDE_OCP    //define to enable hardware ocp override
 #define CAN_CONFIG      //define to enable use CAN to change variables
@@ -14,20 +14,16 @@
 #define VQ_LEQ_0        //define to use Vq less than 0
 #define MIDDLE_CLAMP    //define to use middle clamp
 #define SVPWM           //define to use SVPWM
-
-// #define OPEN_LOOP_SPEED
-#ifdef OPEN_LOOP_SPEED
-#define OPEN_LOOP_RPM 12000 // Motor RPM
-#endif
+// #define Decouopling    //define to enable decoupling in current controller
 
 // Motor number
 // #define MOT_RR
-#define MOT_RL 
-// #define MOT_CAL
+// #define MOT_RL 
+#define MOT_CAL
 
 // Protections
 #define SOFTOCP 70
-#define ACAOCP 72   
+#define ACAOCP 85 
 #define MOVRMSOCP (uint32_t)36000000 //should be 10000*OCP^2
 #define MOS_OTP 1000        //should be 10 times otp temp in deg C
 #define MOT_OTP 700         //should be 10 times otp temp in deg C
@@ -36,17 +32,17 @@
 #define PID_P 1.0f
 #define PID_I 0.02f
 #define PID_D 0.0f
-#define PID_RAMP 10000.0f
+#define PID_RAMP 100000.0f
 #define PID_LIMIT 20.0f
 // #define RAMP_TIME 1.0f
 #define HW_OC_TIME      2300    //should be in pwm cycles, 2300 is 100ms
 #define SOFT_OC_TIME    50      //should be in pwm cycles, 50 is 2ms
 #define ENC_TIME        50      //should be in pwm cycles, 50 is 2ms
 
-#define QKP             2.4f
-#define DKP             1.92f
-#define QKI             1.5f
-#define DKI             1.5f
+#define QKP             4.8f
+#define DKP             3.84f
+#define QKI             3.0f
+#define DKI             3.0f
 
 //MATLAB tuned PID values
 // #define QKP             0.226f
@@ -106,7 +102,7 @@
 #define FILENAME "MOT_CAL_%04d%02d%02d_%02d%02d%02d_NEW_V2_4.bin"
 #else
 #ifdef MOT_CAL
-#define ZERO_ELECTRIC_ANGLE 2.5f //should be in radians
+#define ZERO_ELECTRIC_ANGLE 6.08f //should be in radians
 #define MOT_CURR 1.084f
 #define FILENAME "MOT_CAL_%04d%02d%02d_%02d%02d%02d_NEW_V2_4.bin"
 #endif

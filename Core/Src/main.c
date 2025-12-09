@@ -48,6 +48,8 @@
 // #include "stm32h7xx_hal_tim_ex.h"
 #include "time.h"
 #include "arm_math.h"
+#include "MTPA/MTPA.h"
+#include "MUSIC/music.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -107,6 +109,7 @@ __attribute__((section("._RAM_Area"))) FIL MyFile;     /* File object */
 //Logging Buffers
 __attribute__((section("._RAM_Area"))) logger_t log_buf[2][3600];
 // __attribute__((section("._RAM_Area"))) logger_t log_test[2][2];
+
 uint8_t wr_log_buf_num = 0;
 uint16_t wr_log_index = 0;
 RTC_DateTypeDef log_date;
@@ -180,6 +183,8 @@ int indexLED=0;
 int indexHeartbeat=0;
 int indexStatus=0;
 int indexTimer = 0;
+uint32_t indexMusic = 0;
+uint32_t indexMusicTs = 0;
 uint32_t prev_new_file = 0;
 int prev_sd = 0;
 int prevWhileTest = 0;
@@ -189,6 +194,9 @@ uint8_t last_got_date = 0;
 int freq = FREQ;
 float Ts=(float)1/FREQ;
 // float angle_prev=-1.0f;
+const float Ld = 2.49f * 0.0001f; //H
+const float Lq = 3.8f * 0.0001f; //H
+const float flux_linkage_m = 4.14f * 0.01f; //Wb
 const float torque_constant = 0.291f; //Nm/A
 const float electrical_constant = 0.031f; //rad/s/V
 const float max_torque = 25;
@@ -205,7 +213,7 @@ int16_t MCU_Conv[1024] = {0};
 const float DCVPLSB = 0.00897;     // DCVPLSB = 451*3.3/adc3_range 
 const float DCAPLSB = 0.0402930f;   // DCAPLSB = 3.3/20e-3/adc1_range 
 float max_ramp = 1/FREQ/RAMP_TIME_DERATE;
-uint8_t fast_stop_enable = 1;
+uint8_t fast_stop_enable = 0;
 
 #ifdef TIMING
 int max_time = 0;
@@ -319,7 +327,8 @@ int main(void)
   // log_buf[0][0].LGSTATE = 0;
   for (size_t i = 0; i < 1024; i++)
   {
-    Mot_Conv[i] = (int16_t)10*((float)(1650-(3300*i/1024))/Mot_Curr/3.795-1000/3.795);
+    // Mot_Conv[i] = (int16_t)10*((float)(1650-(3300*i/1024))/Mot_Curr/3.795-1000/3.795);
+    Mot_Conv[i] = (int16_t)10*((float)(0.5*(3300*i/1024))/Mot_Curr/3.795-1000/3.795);
     // if (Mot_Conv[i] < 0)
     // {
     //   Mot_Conv[i] = 0;
@@ -475,7 +484,7 @@ int main(void)
   setPhaseVoltage(25,0,_electricalAngle(M_PI*1.5f,pole_pairs),TIM1,0,0,0);
   for (size_t i = 0; i < 2000; i++)
   {
-    Get_Encoder_Angle(DMA_ADC2_arr,&angle_now);
+    Get_Encoder_Angle(DMA_ADC2_arr,&angle_now,NULL,NULL);
     HAL_Delay(10);
     SCB_InvalidateDCache_by_Addr(DMA_ADC2_arr,sizeof(DMA_ADC2_arr));
     if (i >= 1500)
@@ -487,7 +496,7 @@ int main(void)
   // uint16_t read_raw=read(&hspi1, SPI1_CSn_GPIO_Port,SPI1_CSn_Pin,AS5048A_ANGLE);
   float raw_angle;
   SCB_InvalidateDCache_by_Addr(DMA_ADC2_arr,sizeof(DMA_ADC2_arr));
-  Get_Encoder_Angle(DMA_ADC2_arr,&raw_angle);
+  Get_Encoder_Angle(DMA_ADC2_arr,&raw_angle,NULL,NULL);
   raw_angle = angle_integrate/500.0f;
   zero_electric_angle=_electricalAngle(raw_angle,pole_pairs);
   setPhaseVoltage(0,0,_electricalAngle(M_PI*1.5f,pole_pairs),TIM1,0,0,0);
@@ -801,7 +810,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     float speed_rad, angle_pll;
     Get_Encoder_Angle(ADC2_arr,&angle_now,&speed_rad,&angle_pll);
     int8_t enc_err = 0;
-    // angle_now = angle_pll;
+    angle_now = angle_pll;
     if(angle_now != angle_now)
     {
       enc_err = 1;
@@ -829,33 +838,30 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     }
 
     angle_now = _normalizeAngle(angle_now);
-
-    #ifdef OPEN_LOOP_SPEED
-    angle_now = _normalizeAngle(last_angle + open_loop_rpm_var/ 60.0f / freq * 2 * M_PI * 4);
-    last_angle = angle_now;
-    // setPhaseVoltage(Iq_controller_output, Id_controller_output, _electricalAngle(angle_now, pole_pairs),TIM1);    
-    #endif
     
     voltage_power_supply = (float)ADC3_arr[0]*DCVPLSB;
     voltage_limit = voltage_power_supply;
-    // float filtered_angle = LowPassFilter_operator(angle_now,&filter);
-    
+
     float angular_vel = 0.0f;
-    zero_cross += cal_angular_vel(angle_now,&angular_vel);
-    float raw_RPM = (float)dir*angular_vel/4/2/M_PI*60;
+    cal_angular_vel(angle_now,&angular_vel);
     filtered_RPM = LowPassFilter_operator((float)dir*angular_vel/4/2/M_PI*60,&filter_RPM);
+    // float filtered_speed_rad = (float)filtered_RPM*4*2*M_PI/60;
     // float target_torque = max_torque*last_percent;
-    float max_derate = _constrain((float)DERATE_END/DERATE_START-(float)abs(filtered_RPM)/DERATE_START,0.0f,1.0f);
+    // float max_derate = _constrain((float)DERATE_END/DERATE_START-(float)abs(filtered_RPM)/DERATE_START,0.0f,1.0f);
     // last_percent = _constrain(last_percent,-max_derate,max_derate);
-    float target_Iq = max_current*last_percent;
-    float filtered_Iabc[3] = {0.0f};
+    float target_Is = max_current*last_percent;
+    float target_Iq = target_Is;
+    float target_Id = 0.0f;
+    // get_target_Idq(target_Is,filtered_RPM,&target_Id,&target_Iq);
+    // float target_Torque = 20*last_percent; //Nm
+    // float filtered_Iabc[3] = {0.0f};
     float current_phase_dc[3] = {0.0f};
     int8_t soft_oc_detected = 0;
     soft_oc_sum = soft_oc_sum - soft_oc_buf[soft_oc_index];
     for (int i=0;i<3;i++){
        	current_phase[i] =(float) (ADC1_arr[i]-current_offset[i])*ACAPLSB;
         //OCP
-        filtered_Iabc[i] = LowPassFilter_operator(current_phase[i],&filter_current_Iabc[i]);
+        // filtered_Iabc[i] = LowPassFilter_operator(current_phase[i],&filter_current_Iabc[i]);
         current_phase_dc[i] = LowPassFilter_operator(current_phase[i],&filter_crrent_DC_Iabc[i]);
         if (current_phase[i] > ACAOCP||current_phase[i] < -ACAOCP)
         {
@@ -885,6 +891,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     pid_controller_current_Iabc[0].limit = voltage_limit;
     pid_controller_current_Iabc[1].limit = voltage_limit;
     pid_controller_current_Iabc[2].limit = voltage_limit;
+
+    
     
     float Id,Iq;
     cal_Idq(current_phase, _electricalAngle(angle_now, pole_pairs), &Id, &Iq);
@@ -895,7 +903,20 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     Ia = sqrt(filtered_Id*filtered_Id+filtered_Iq*filtered_Iq);
 
     Iq_controller_output=PID_operator(target_Iq-filtered_Iq,&pid_controller_current_Iq);
-    Id_controller_output=PID_operator(-filtered_Id,&pid_controller_current_Id);
+    Id_controller_output=PID_operator(target_Id-filtered_Id,&pid_controller_current_Id);
+
+    #ifdef Decouopling
+    // Decoupling
+    float Vd_decoupling = (-1.0f)*(filtered_RPM*2*M_PI/60)*Lq*filtered_Iq;
+    float Vq_decoupling = (filtered_RPM*2*M_PI/60)*(Ld*filtered_Id+flux_linkage_m);
+    Id_controller_output += Vd_decoupling;
+    Iq_controller_output += Vq_decoupling;
+    #endif
+
+    Id_controller_output = _constrain(Id_controller_output,-voltage_limit,voltage_limit);
+    Iq_controller_output = _constrain(Iq_controller_output,-voltage_limit,voltage_limit);
+    float max_Id = sqrtf(voltage_limit*voltage_limit - Iq_controller_output*Iq_controller_output);
+    Id_controller_output = _constrain(Id_controller_output,-max_Id,max_Id);
     
     float Iabc_controller_output[3] = {0.0f};
     for (size_t i = 0; i < 3; i++)
@@ -919,18 +940,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
       } 
     }
     
-    float IqOC_controller_output;
-    if(Iq_controller_output > 0)
-    {
-      IqOC_controller_output = _constrain(PID_operator(SOFTOCP-Ia,&pid_controller_current_OCP),-Iq_controller_output,0);
-    }
-    else
-    {
-      IqOC_controller_output = _constrain(PID_operator(-SOFTOCP-Ia,&pid_controller_current_OCP),0,-Iq_controller_output);
-    }
-    
-    // setPhaseVoltage(_constrain(Iq_controller_output+IqOC_controller_output,-voltage_power_supply/2,voltage_power_supply/2),  _constrain(Id_controller_output,-voltage_power_supply/2,voltage_power_supply/2), _electricalAngle(angle_now, pole_pairs),TIM1);
-    // setPhaseVoltage(percent_torque_requested*100, 0, _electricalAngle(angle_now, pole_pairs),TIM1);
     setPhaseVoltage(Iq_controller_output, Id_controller_output, _electricalAngle(angle_now, pole_pairs),TIM1,-Iabc_controller_output[0],-Iabc_controller_output[1],-Iabc_controller_output[2]);
     
 
@@ -944,9 +953,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
       {
         HAL_GPIO_TogglePin(LED_ERR_GPIO_Port,LED_ERR_Pin);
       }
-      
-    	// HAL_GPIO_TogglePin(LED_ERR_GPIO_Port, LED_ERR_Pin);
-      // UART_TX_Send(&huart1,"ping");
+    
     	indexLED=0;
     }
 
@@ -1026,14 +1033,14 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     log_buf[wr_log_buf_num][wr_log_index%3600].LGID = (int16_t) roundf(filtered_Id*100);
     log_buf[wr_log_buf_num][wr_log_index%3600].LGIQ = (int16_t) roundf(filtered_Iq*10);
     log_buf[wr_log_buf_num][wr_log_index%3600].LGZERO = (uint16_t) soft_oc_sum;
-    log_buf[wr_log_buf_num][wr_log_index%3600].LGDCIU = (int16_t) roundf(current_phase_dc[0]*100);
-    log_buf[wr_log_buf_num][wr_log_index%3600].LGDCIV = (int16_t) roundf(current_phase_dc[1]*100);
+    log_buf[wr_log_buf_num][wr_log_index%3600].LGDCIU = (int16_t) roundf(target_Id*100);
+    log_buf[wr_log_buf_num][wr_log_index%3600].LGDCIV = (int16_t) roundf(target_Iq*100);
     log_buf[wr_log_buf_num][wr_log_index%3600].LGDCIW = (int16_t) roundf(current_phase_dc[2]*100);
     log_buf[wr_log_buf_num][wr_log_index%3600].LGVA = (int16_t) roundf(angle_pll*10);
     log_buf[wr_log_buf_num][wr_log_index%3600].LGVB = (int16_t) roundf(speed_rad*10);
     log_buf[wr_log_buf_num][wr_log_index%3600].LGVC = (int16_t) roundf(Iabc_controller_output[2]*10);
-    log_buf[wr_log_buf_num][wr_log_index%3600].LGRMSIU = (uint16_t) roundf(RMS_sum[0]/100);
-    log_buf[wr_log_buf_num][wr_log_index%3600].LGRMSIV = (uint16_t) roundf(RMS_sum[1]/100);
+    log_buf[wr_log_buf_num][wr_log_index%3600].LGRMSIU = (uint16_t) __HAL_TIM_GET_COUNTER(&htim5)>>16;
+    log_buf[wr_log_buf_num][wr_log_index%3600].LGRMSIV = (uint16_t) __HAL_TIM_GET_COUNTER(&htim5);
     log_buf[wr_log_buf_num][wr_log_index%3600].LGRMSIW = (uint16_t) roundf(RMS_sum[2]/100);
     log_buf[wr_log_buf_num][wr_log_index%3600].LGLOGBUF = wr_log_index;
 
@@ -1181,6 +1188,7 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
           if(control & CTRL_ENABLE && voltage_power_supply >= 20 && inverter_state == STATE_READY && HAL_GPIO_ReadPin(GATE_Ready_GPIO_Port,GATE_Ready_Pin) == GPIO_PIN_SET )
           {
             inverter_state = STATE_RUNNING;
+            indexMusic = 0;
             HAL_GPIO_WritePin(LED_ERR_GPIO_Port,LED_ERR_Pin,GPIO_PIN_RESET);
             HAL_GPIO_WritePin(LED_RUN_GPIO_Port,LED_RUN_Pin,GPIO_PIN_SET);
             percent_torque_requested = 0;
@@ -1216,6 +1224,7 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
             percent_torque_requested = 0;
             enable_hw_oc = 0;
             HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_RESET);
+            got_date = 0;
           }
           else
           {
@@ -1248,6 +1257,10 @@ void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo1ITs)
     {
       if(RxHeader1.Identifier == 0x100)
       {
+        if(got_date)
+        {
+          return;
+        }
         volatile uint32_t sec_from_midnight = RxData1[0] | RxData1[1] << 8 | RxData1[2] << 16 | RxData1[3] << 24;
         volatile uint16_t day_from_1984 = RxData1[4] | RxData1 [5] << 8;
         sec_from_midnight/=1000;

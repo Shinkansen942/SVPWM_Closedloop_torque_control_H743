@@ -75,6 +75,11 @@ endif
 ######################################
 # C sources
 C_SOURCES =  \
+Core/Src/MTPA/mtpa.c \
+Core/Src/MTPA/mtpa_data.c \
+Core/Src/MUSIC/music.c \
+Core/Src/MUSIC/music_data.c \
+Core/Src/MUSIC/test.c \
 Core/Src/PLL/PLL.c \
 Core/Src/PLL/PLL_data.c \
 Core/Src/PLL/rt_nonfinite.c \
@@ -242,6 +247,8 @@ AS_INCLUDES = \
 # C includes
 C_INCLUDES =  \
 -ICore/Inc \
+-ICore/Inc/MTPA \
+-ICore/Inc/MUSIC \
 -ICore/Inc/PLL \
 -IDrivers/CMSIS/Device/ST/STM32H7xx/Include \
 -IDrivers/CMSIS/Include \
