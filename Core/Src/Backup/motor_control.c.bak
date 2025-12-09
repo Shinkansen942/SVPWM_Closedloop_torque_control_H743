@@ -21,6 +21,7 @@ extern float voltage_power_supply;
 extern int period;
 // extern float angle_prev;
 extern float Ts;
+extern float max_current;
 
 int trap_120_map[6][3] = {
   {_HIGH_IMPEDANCE,1,-1},
@@ -231,4 +232,23 @@ void cal_Idq(float* current_phase, float angle_el, float* Id, float* Iq)
 //	 float Id=cos(angle_el)*I_alpha+sin(angle_el)*I_beta;
 	*Iq = -sin(angle_el)*I_alpha+cos(angle_el)*I_beta;
   *Id = cos(angle_el)*I_alpha+sin(angle_el)*I_beta;
+}
+
+void get_target_Idq(float Is, float speed_RPM, float* Id, float* Iq)
+{
+  float omega_e = (float)speed_RPM * 4 * 2.0f * M_PI / 60.0f;
+  float discriminant = 8.08e-10f - (0.000000023333333333333339336063836389849*voltage_power_supply*voltage_power_supply)/omega_e/omega_e;
+  float Id_optimal = 171.5 - sqrt((29412.25f + 0.5*Is*Is));
+  discriminant = -1;
+
+  if(discriminant > 0)
+  {
+    float sqrt_discriminant = sqrtf(discriminant);
+    Id_optimal = 293.99999999999986840738140870695 - 14285714.2857142820391445899654*sqrt_discriminant;
+    Id_optimal = _constrain(Id_optimal, -max_current, 0.0f);
+  }
+
+  float Iq_optimal = _sign(Is)*sqrt(Is*Is - Id_optimal*Id_optimal);
+  *Id = _constrain(Id_optimal,-max_current,0.0f);
+  *Iq = Iq_optimal;
 }

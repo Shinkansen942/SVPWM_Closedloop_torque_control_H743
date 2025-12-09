@@ -13,6 +13,7 @@
 
 
 #define _constrain(amt,low,high) ((amt)<(low)?(low):((amt)>(high)?(high):(amt)))
+#define _sign(x) ((x)>0?1:((x)<0?-1:0))
 #define _SQRT3 1.73205080757f
 #define _SQRT3_2 0.86602540378f
 #define _1_SQRT3 0.57735026919f
@@ -25,6 +26,7 @@ void setPhaseVoltage(float Uq,float Ud, float angle_el, TIM_TypeDef * TIM_BASE,f
 void setSixStepPhaseVoltage(float Uq, float angle_el, TIM_TypeDef* TIM_BASE);
 float cal_angular_vel(float angle_now,float* speed_RPM);
 void cal_Idq(float* current_phase, float angle_el, float* Id, float* Iq);
+void get_target_Idq(float Is, float speed_RPM, float* Id, float* Iq);
 
 
 #endif /* INC_MOTOR_CONTROL_H_ */

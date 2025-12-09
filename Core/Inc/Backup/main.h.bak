@@ -65,10 +65,6 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define OC_Fault_Pin GPIO_PIN_4
-#define OC_Fault_GPIO_Port GPIOE
-#define OT_Fault_Pin GPIO_PIN_5
-#define OT_Fault_GPIO_Port GPIOE
 #define TU_Pin GPIO_PIN_6
 #define TU_GPIO_Port GPIOF
 #define TV_Pin GPIO_PIN_7
@@ -107,38 +103,41 @@ void Error_Handler(void);
 #define WL_GPIO_Port GPIOE
 #define WH_Pin GPIO_PIN_13
 #define WH_GPIO_Port GPIOE
-#define LED_CAN_Pin GPIO_PIN_14
-#define LED_CAN_GPIO_Port GPIOE
-#define LED_E15_Pin GPIO_PIN_15
-#define LED_E15_GPIO_Port GPIOE
-#define LED_B10_Pin GPIO_PIN_10
-#define LED_B10_GPIO_Port GPIOB
-#define LED_CAN_ERR_Pin GPIO_PIN_11
+#define LED_CAN_ERR_Pin GPIO_PIN_12
 #define LED_CAN_ERR_GPIO_Port GPIOB
-#define LED_ERR_Pin GPIO_PIN_12
-#define LED_ERR_GPIO_Port GPIOB
-#define LED_TIM_Pin GPIO_PIN_13
-#define LED_TIM_GPIO_Port GPIOB
-#define LED_RUN_Pin GPIO_PIN_14
-#define LED_RUN_GPIO_Port GPIOB
-#define LED_SD_Pin GPIO_PIN_15
-#define LED_SD_GPIO_Port GPIOB
-#define LED_D8_Pin GPIO_PIN_8
-#define LED_D8_GPIO_Port GPIOD
+#define LED_CAN_Pin GPIO_PIN_13
+#define LED_CAN_GPIO_Port GPIOB
+#define LED_B14_Pin GPIO_PIN_14
+#define LED_B14_GPIO_Port GPIOB
+#define LED_B15_Pin GPIO_PIN_15
+#define LED_B15_GPIO_Port GPIOB
+#define LED_TIM_Pin GPIO_PIN_8
+#define LED_TIM_GPIO_Port GPIOD
 #define LED_D9_Pin GPIO_PIN_9
 #define LED_D9_GPIO_Port GPIOD
+#define LED_RUN_Pin GPIO_PIN_10
+#define LED_RUN_GPIO_Port GPIOD
+#define LED_SD_Pin GPIO_PIN_11
+#define LED_SD_GPIO_Port GPIOD
+#define LED_D12_Pin GPIO_PIN_12
+#define LED_D12_GPIO_Port GPIOD
+#define LED_ERR_Pin GPIO_PIN_13
+#define LED_ERR_GPIO_Port GPIOD
 #define BUT_G2_Pin GPIO_PIN_2
 #define BUT_G2_GPIO_Port GPIOG
 #define BUT_G2_EXTI_IRQn EXTI2_IRQn
-#define BUT_G3_Pin GPIO_PIN_3
-#define BUT_G3_GPIO_Port GPIOG
-#define BUT_G3_EXTI_IRQn EXTI3_IRQn
+#define LV_Fault_Pin GPIO_PIN_5
+#define LV_Fault_GPIO_Port GPIOG
+#define LV_Fault_EXTI_IRQn EXTI9_5_IRQn
 #define GATE_Ready_Pin GPIO_PIN_1
 #define GATE_Ready_GPIO_Port GPIOD
+#define GATE_Fault_Pin GPIO_PIN_3
+#define GATE_Fault_GPIO_Port GPIOD
+#define GATE_Fault_EXTI_IRQn EXTI3_IRQn
 #define Motor_Enable_Pin GPIO_PIN_5
 #define Motor_Enable_GPIO_Port GPIOD
-#define GATE_FB_Pin GPIO_PIN_6
-#define GATE_FB_GPIO_Port GPIOD
+#define OC_Fault_Pin GPIO_PIN_6
+#define OC_Fault_GPIO_Port GPIOD
 
 /* USER CODE BEGIN Private defines */
 
