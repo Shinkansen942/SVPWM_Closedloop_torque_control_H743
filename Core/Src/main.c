@@ -847,8 +847,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     filtered_RPM = LowPassFilter_operator((float)dir*angular_vel/4/2/M_PI*60,&filter_RPM);
     // float filtered_speed_rad = (float)filtered_RPM*4*2*M_PI/60;
     // float target_torque = max_torque*last_percent;
-    // float max_derate = _constrain((float)DERATE_END/DERATE_START-(float)abs(filtered_RPM)/DERATE_START,0.0f,1.0f);
-    // last_percent = _constrain(last_percent,-max_derate,max_derate);
+    float max_derate = _constrain(((float)abs(filtered_RPM)-(float)DERATE_END)/(DERATE_START-DERATE_END),0.0f,1.0f);
+    float temp_derate = _constrain(((float)abs(T_Mot)-(float)T_DERATE_END)/(T_DERATE_START-T_DERATE_END),0.0f,1.0f);
+
+    last_percent = _constrain(last_percent,-temp_derate,temp_derate);
     float target_Is = max_current*last_percent;
     float target_Iq = target_Is;
     float target_Id = 0.0f;

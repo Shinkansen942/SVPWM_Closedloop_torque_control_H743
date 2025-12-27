@@ -63,6 +63,8 @@
 #define DERATE_START        9000    //should be in RPM, 1000 is 1000RPM
 #define DERATE_END          13000   //should be in RPM, 12000 is 12000RPM
 #define RAMP_TIME_DERATE    5       //time from 0 to 100 percent
+#define T_DERATE_START      500      //should be 10 times in deg C, 500 is 50 deg C
+#define T_DERATE_END        800      //should be 10 times in deg C, 800 is 80 deg C
 
 #define FREQ_23KHZ
 
