@@ -39,10 +39,10 @@
 #define SOFT_OC_TIME    50      //should be in pwm cycles, 50 is 2ms
 #define ENC_TIME        50      //should be in pwm cycles, 50 is 2ms
 
-#define QKP             4.8f
-#define DKP             3.84f
-#define QKI             3.0f
-#define DKI             3.0f
+#define QKP             2.3f //4.8f
+#define DKP             2.3f //3.84f
+#define QKI             724.5f //3.0f
+#define DKI             724.5f //3.0f
 
 //MATLAB tuned PID values
 // #define QKP             0.226f
