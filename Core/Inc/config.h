@@ -9,13 +9,13 @@
 // #define RMSOCP          //undefine to disable RMS overcurrent protection
 // #define WAIT_GATE_READY //undefine to not wait for gate ready signal
 // #define OVERRIDE_OCP    //define to enable hardware ocp override
-#define CAN_CONFIG      //define to enable use CAN to change variables
+// #define CAN_CONFIG      //define to enable use CAN to change variables
 // #define SIXSTEP         //define to enable six step comutation
 #define VQ_LEQ_0        //define to use Vq less than 0
 #define MIDDLE_CLAMP    //define to use middle clamp
 #define SVPWM           //define to use SVPWM
-// #define Decouopling    //define to enable decoupling in current controller
-#define ANTI_WINDUP
+#define Decouopling    //define to enable decoupling in current controller
+#define ANTI_WINDUP     //define to enable anti windup in PID controllers
 
 // Motor number
 #define MOT_RR 
@@ -27,7 +27,7 @@
 #define ACAOCP 85 //Amp
 #define MOVRMSOCP (uint32_t)36000000 //should be 10000*OCP^2
 #define MOS_OTP 1000        //should be 10 times otp temp in deg C
-#define MOT_OTP 700         //should be 10 times otp temp in deg C
+#define MOT_OTP 900         //should be 10 times otp temp in deg C
 #define MOT_UTP 50        //should be 10 times utp temp in deg C
 #define ENC_UV 50           //should be 3~5% Encoder adc full range
 #define PID_P 1.0f
@@ -64,8 +64,8 @@
 #define DERATE_START        9000    //should be in RPM, 1000 is 1000RPM
 #define DERATE_END          13000   //should be in RPM, 12000 is 12000RPM
 #define RAMP_TIME_DERATE    5       //time from 0 to 100 percent
-#define T_DERATE_START      600      //should be 10 times in deg C, 500 is 50 deg C
-#define T_DERATE_END        750      //should be 10 times in deg C, 800 is 80 deg C
+#define T_DERATE_START      700      //should be 10 times in deg C, 500 is 50 deg C
+#define T_DERATE_END        850      //should be 10 times in deg C, 800 is 80 deg C
 
 #define FREQ_23KHZ
 
