@@ -196,7 +196,7 @@ float Ts=(float)1/FREQ;
 // float angle_prev=-1.0f;
 const float Ld = 2.49f * 0.0001f; //H
 const float Lq = 3.8f * 0.0001f; //H
-const float flux_linkage_m = 4.14f * 0.01f; //Wb
+const float flux_linkage_m = 4.75f * 0.01f; //Wb
 const float torque_constant = 0.291f; //Nm/A
 const float electrical_constant = 0.031f; //rad/s/V
 const float max_torque = 25;
@@ -327,8 +327,8 @@ int main(void)
   // log_buf[0][0].LGSTATE = 0;
   for (size_t i = 0; i < 1024; i++)
   {
-    // Mot_Conv[i] = (int16_t)10*((float)(1650-(3300*i/1024))/Mot_Curr/3.795-1000/3.795);
-    Mot_Conv[i] = (int16_t)10*((float)(0.5*(3300*i/1024))/Mot_Curr/3.795-1000/3.795);
+    Mot_Conv[i] = (int16_t)10*((float)(1650-(3300*i/1024))/Mot_Curr/3.795-1000/3.795);
+    // Mot_Conv[i] = (int16_t)10*((float)(0.5*(3300*i/1024))/Mot_Curr/3.795-1000/3.795);
     // if (Mot_Conv[i] < 0)
     // {
     //   Mot_Conv[i] = 0;
@@ -911,14 +911,16 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     // Decoupling
     float Vd_decoupling = (-1.0f)*(filtered_RPM*2*M_PI/60)*Lq*filtered_Iq;
     float Vq_decoupling = (filtered_RPM*2*M_PI/60)*(Ld*filtered_Id+flux_linkage_m);
+    Vq_decoupling = _constrain(Vq_decoupling,-voltage_limit,voltage_limit);
+    Vd_decoupling = _constrain(Vd_decoupling,-voltage_limit,voltage_limit);
     Id_controller_output += Vd_decoupling;
     Iq_controller_output += Vq_decoupling;
     #endif
 
     Id_controller_output = _constrain(Id_controller_output,-voltage_limit,voltage_limit);
     Iq_controller_output = _constrain(Iq_controller_output,-voltage_limit,voltage_limit);
-    float max_Id = sqrtf(voltage_limit*voltage_limit - Iq_controller_output*Iq_controller_output);
-    Id_controller_output = _constrain(Id_controller_output,-max_Id,max_Id);
+    // float max_Id = sqrtf(voltage_limit*voltage_limit - Iq_controller_output*Iq_controller_output);
+    // Id_controller_output = _constrain(Id_controller_output,-max_Id,max_Id);
     
     float Iabc_controller_output[3] = {0.0f};
     for (size_t i = 0; i < 3; i++)

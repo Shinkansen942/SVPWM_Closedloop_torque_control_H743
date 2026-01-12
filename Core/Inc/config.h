@@ -15,15 +15,16 @@
 #define MIDDLE_CLAMP    //define to use middle clamp
 #define SVPWM           //define to use SVPWM
 // #define Decouopling    //define to enable decoupling in current controller
+#define ANTI_WINDUP
 
 // Motor number
-// #define MOT_RR
+#define MOT_RR 
 // #define MOT_RL 
-#define MOT_CAL
+// #define MOT_CAL
 
 // Protections
 #define SOFTOCP 70
-#define ACAOCP 85 
+#define ACAOCP 85 //Amp
 #define MOVRMSOCP (uint32_t)36000000 //should be 10000*OCP^2
 #define MOS_OTP 1000        //should be 10 times otp temp in deg C
 #define MOT_OTP 700         //should be 10 times otp temp in deg C
@@ -39,10 +40,10 @@
 #define SOFT_OC_TIME    50      //should be in pwm cycles, 50 is 2ms
 #define ENC_TIME        50      //should be in pwm cycles, 50 is 2ms
 
-#define QKP             2.3f //4.8f
-#define DKP             2.3f //3.84f
-#define QKI             724.5f //3.0f
-#define DKI             724.5f //3.0f
+#define QKP             0.78f//2.3f //4.8f
+#define DKP             0.78f//2.3f //3.84f
+#define QKI             350.0f//724.5f //3.0f
+#define DKI             350.0f//724.5f //3.0f
 
 //MATLAB tuned PID values
 // #define QKP             0.226f
@@ -63,8 +64,8 @@
 #define DERATE_START        9000    //should be in RPM, 1000 is 1000RPM
 #define DERATE_END          13000   //should be in RPM, 12000 is 12000RPM
 #define RAMP_TIME_DERATE    5       //time from 0 to 100 percent
-#define T_DERATE_START      500      //should be 10 times in deg C, 500 is 50 deg C
-#define T_DERATE_END        800      //should be 10 times in deg C, 800 is 80 deg C
+#define T_DERATE_START      600      //should be 10 times in deg C, 500 is 50 deg C
+#define T_DERATE_END        750      //should be 10 times in deg C, 800 is 80 deg C
 
 #define FREQ_23KHZ
 

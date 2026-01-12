@@ -17,20 +17,28 @@ float PID_operator(float error, struct PIDController* pid){
     // integral = _constrain(integral, -pid->limit, pid->limit);
     // D环（微分环节）
     float derivative = pid->D*(error - pid->error_prev)/Ts;
+
 	float output;
-    
+    float anit_windup;
+
+    #ifndef ANTI_WINDUP
+    integral = _constrain(integral, -pid->limit/1, pid->limit/1);
+    output = proportional + integral + derivative;
+    #endif
+    #ifdef ANTI_WINDUP
     //anti_windup & back_calculation
     output = proportional + integral + derivative;
-    float anit_windup =  _constrain(output, -pid->limit, pid->limit) - output;
+    anit_windup =  _constrain(output, -pid->limit, pid->limit) - output;
 
     integral += (1.0f/pid->P)*anit_windup;
-    integral = _constrain(integral, -pid->limit/4, pid->limit/4);
+    integral = _constrain(integral, -pid->limit/1, pid->limit/1);
 
     // 将P,I,D三环的计算值加起来
     output = proportional + integral + derivative;
+    // anit_windup = output_constrained - output;
+
+    #endif
     float output_constrained = _constrain(output, -pid->limit, pid->limit);
-    
-    anit_windup = output_constrained - output;
 
     output = output_constrained;
 
