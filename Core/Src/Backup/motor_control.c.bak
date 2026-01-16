@@ -1,5 +1,5 @@
 /*
- * mortor_control.c
+ * motor_control.c
  *
  *  Created on: Jun 17, 2023
  *      Author: hht
