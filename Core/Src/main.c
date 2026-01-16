@@ -48,8 +48,6 @@
 // #include "stm32h7xx_hal_tim_ex.h"
 #include "time.h"
 #include "arm_math.h"
-#include "MTPA/MTPA.h"
-#include "MUSIC/music.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/

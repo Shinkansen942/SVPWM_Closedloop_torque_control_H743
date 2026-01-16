@@ -75,8 +75,6 @@ endif
 ######################################
 # C sources
 C_SOURCES =  \
-Core/Src/MTPA/mtpa.c \
-Core/Src/MTPA/mtpa_data.c \
 Core/Src/MUSIC/music.c \
 Core/Src/MUSIC/music_data.c \
 Core/Src/MUSIC/test.c \
