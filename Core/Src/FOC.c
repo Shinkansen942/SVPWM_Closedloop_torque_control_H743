@@ -3,7 +3,7 @@
 #include "config.h"
 #include "motor_control.h"
 
-#define FIELD_WEAKENING_DC_VOLTAGE_LIMIT 0.9f // 90% of DC bus voltage
+#define FIELD_WEAKENING_DC_VOLTAGE_LIMIT 0.8f // 90% of DC bus voltage
 
 // every motor constant and derived value should be line to neutral value
 
@@ -25,9 +25,9 @@ float field_weaking_control(float rpm, float Iq, float Vd, float Vdc)
     float Idfw = 0.0f;
     if ( idfw_numerator < 0.0f)
     {
-        Idfw = idfw_numerator / (omega_e * Ld);
+        Idfw = 1.414*idfw_numerator / (omega_e * Ld);
     }
-    return Idfw*1.414f;
+    return _constrain(Idfw, -MAX_FLUX_ID, 0.0f);
 }
 
 float MTPA_control(float Iq)
@@ -35,6 +35,6 @@ float MTPA_control(float Iq)
     Iq = Iq * 0.707f; // convert to line-neutral value
     float L1 = 0.5*(Ld - Lq);
     float Id_optimal = 1.414f*(-flux_linkage_m+sqrtf(flux_linkage_m*flux_linkage_m+16*L1*L1*Iq*Iq))/(4*L1);
-    Id_optimal = _constrain(Id_optimal,-ACAOCP,0.0f);
+    Id_optimal = _constrain(Id_optimal,-MAX_FLUX_ID,0.0f);
     return Id_optimal;
 }

@@ -16,7 +16,7 @@
 #define SVPWM           //define to use SVPWM
 #define Decouopling    //define to enable decoupling in current controller
 #define ANTI_WINDUP     //define to enable anti windup in PID controllers
-// #define FIELD_WEAKENING //define to enable field weakening control
+#define FIELD_WEAKENING //define to enable field weakening control
 #define MTPA            //define to enable MTPA control
 #define DISABLE_MOT_OT //define to disable motor overtemperature fault
 
@@ -42,7 +42,7 @@
 #define HW_OC_TIME      2300    //should be in pwm cycles, 2300 is 100ms
 #define SOFT_OC_TIME    50      //should be in pwm cycles, 50 is 2ms
 #define ENC_TIME        50      //should be in pwm cycles, 50 is 2ms
-#define MAX_FLUX_ID     -40.0f //40A
+#define MAX_FLUX_ID     40.0f //40A
 
 #define QKP             0.78f//2.3f //4.8f
 #define DKP             0.78f//2.3f //3.84f
