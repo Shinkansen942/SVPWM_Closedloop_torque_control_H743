@@ -908,9 +908,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     #endif
     
     float Id_flux_control = Id_fw<Id_MTPA?Id_fw:Id_MTPA;
-    target_Id = _constrain(Id_flux_control,-MAX_FLUX_ID*fabsf(last_percent),0.0f);
+    target_Id = _constrain(Id_flux_control,(-MAX_FLUX_ID)*_constrain(fabsf(last_percent)*4.0f,0.0f,1.0f),0.0f);
     float max_Iq = sqrtf(max_current*max_current - target_Id*target_Id);
     target_Iq = _constrain(target_Iq,-max_Iq,max_Iq);
+    target_Iq = Id_fw<-MAX_TORQUE_FW_ID?0.0f:target_Iq;
 
     Iq_controller_output=PID_operator(target_Iq-filtered_Iq,&pid_controller_current_Iq);
     Id_controller_output=PID_operator(target_Id-filtered_Id,&pid_controller_current_Id);
