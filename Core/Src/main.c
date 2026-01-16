@@ -1276,7 +1276,7 @@ void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo1ITs)
         volatile uint32_t sec_from_midnight = RxData1[0] | RxData1[1] << 8 | RxData1[2] << 16 | RxData1[3] << 24;
         volatile uint16_t day_from_1984 = RxData1[4] | RxData1 [5] << 8;
         sec_from_midnight/=1000;
-        time_t now = day_from_1984*86400+sec_from_midnight+441763200;
+        time_t now = day_from_1984*86400+sec_from_midnight+441763200+28800;
         struct tm now_tm;
         gmtime_r(&now,&now_tm);
 
