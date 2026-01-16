@@ -75,9 +75,7 @@ endif
 ######################################
 # C sources
 C_SOURCES =  \
-Core/Src/MUSIC/music.c \
-Core/Src/MUSIC/music_data.c \
-Core/Src/MUSIC/test.c \
+Core/Src/FOC.c \
 Core/Src/PLL/PLL.c \
 Core/Src/PLL/PLL_data.c \
 Core/Src/PLL/rt_nonfinite.c \

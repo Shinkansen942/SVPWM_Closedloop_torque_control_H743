@@ -48,6 +48,7 @@
 // #include "stm32h7xx_hal_tim_ex.h"
 #include "time.h"
 #include "arm_math.h"
+#include "FOC.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -156,14 +157,13 @@ float zero_electric_angle=ZERO_ELECTRIC_ANGLE;
 float shaft_angle=0;
 float voltage_limit=440;
 float voltage_power_supply=440;
-int period=CCR; // period for the PWM
+int period=DEF_CCR; // period for the PWM
 int dir=1; // anti clockwise direction is 1 , clockwise is -1
 // int dir = DIR; // anti clockwise direction is 1 , clockwise is -1
 int pole_pairs=1;
 float angle_now;
 float zero_cross = 0.0f;
 const float ACAPLSB = -0.1031436f;   // ACAPLSB = 3.3/15.626e-3/adc1_range
-const float omega_fieldweaking = 3000.0f;
 float filtered_RPM;
 // int int_RPM;
 float filtered_Iq;
@@ -191,7 +191,7 @@ uint8_t last_got_date = 0;
 
 int freq = FREQ;
 float Ts=(float)1/FREQ;
-// float angle_prev=-1.0f;
+const float Rs = 0.126f; //Ohm
 const float Ld = 2.49f * 0.0001f; //H
 const float Lq = 3.8f * 0.0001f; //H
 const float flux_linkage_m = 4.75f * 0.01f; //Wb
@@ -843,18 +843,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     float angular_vel = 0.0f;
     cal_angular_vel(angle_now,&angular_vel);
     filtered_RPM = LowPassFilter_operator((float)dir*angular_vel/4/2/M_PI*60,&filter_RPM);
-    // float filtered_speed_rad = (float)filtered_RPM*4*2*M_PI/60;
-    // float target_torque = max_torque*last_percent;
-    float max_derate = _constrain(((float)abs(filtered_RPM)-(float)DERATE_END)/(DERATE_START-DERATE_END),0.0f,1.0f);
-    float temp_derate = _constrain(((float)abs(T_Mot)-(float)T_DERATE_END)/(T_DERATE_START-T_DERATE_END),0.0f,1.0f);
 
-    last_percent = _constrain(last_percent,-temp_derate,temp_derate);
-    float target_Is = max_current*last_percent;
-    float target_Iq = target_Is;
-    float target_Id = 0.0f;
-    // get_target_Idq(target_Is,filtered_RPM,&target_Id,&target_Iq);
-    // float target_Torque = 20*last_percent; //Nm
-    // float filtered_Iabc[3] = {0.0f};
     float current_phase_dc[3] = {0.0f};
     int8_t soft_oc_detected = 0;
     soft_oc_sum = soft_oc_sum - soft_oc_buf[soft_oc_index];
@@ -892,15 +881,36 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     pid_controller_current_Iabc[1].limit = voltage_limit;
     pid_controller_current_Iabc[2].limit = voltage_limit;
 
-    
+    float temp_derate = 1.0f;
+    #ifdef DISALBE_MOT_OT
+    temp_derate = _constrain(((float)abs(T_Mot)-(float)T_DERATE_END)/(T_DERATE_START-T_DERATE_END),0.0f,1.0f);
+    #endif
+
+    last_percent = _constrain(last_percent,-temp_derate,temp_derate);
+    float target_Is = max_current*last_percent;
+    float target_Iq = target_Is;
+    float target_Id = 0.0f;    
     
     float Id,Iq;
     cal_Idq(current_phase, _electricalAngle(angle_now, pole_pairs), &Id, &Iq);
     filtered_Iq=LowPassFilter_operator(Iq,&filter_current_Iq);
     filtered_Id=LowPassFilter_operator(Id,&filter_current_Id);
-    // filtered_Iq = Iq;
-    // filtered_Id = Id;
-    Ia = sqrt(filtered_Id*filtered_Id+filtered_Iq*filtered_Iq);
+    
+    float Id_fw = 0.0f;
+    float Id_MTPA = 0.0f;
+
+    #ifdef FIELD_WEAKENING
+    Id_fw = field_weaking_control(filtered_RPM,filtered_Iq,Id_controller_output,voltage_limit);
+    #endif
+
+    #ifdef MTPA
+    Id_MTPA = MTPA_control(filtered_Iq);
+    #endif
+    
+    float Id_flux_control = Id_fw<Id_MTPA?Id_fw:Id_MTPA;
+    target_Id = Id_flux_control;
+    float max_Iq = sqrtf(max_current*max_current - target_Id*target_Id);
+    target_Iq = _constrain(target_Iq,-max_Iq,max_Iq);
 
     Iq_controller_output=PID_operator(target_Iq-filtered_Iq,&pid_controller_current_Iq);
     Id_controller_output=PID_operator(target_Id-filtered_Id,&pid_controller_current_Id);
@@ -1522,7 +1532,9 @@ void CAN_Send_Temp(uint16_t ADC_arr[6])
   }
   if(T_Mot > MOT_OTP || T_Mot < MOT_UTP)
   {
+    #ifndef DISABLE_MOT_OT
     Enter_ERROR_State(ERROR_MOT_OT);
+    #endif
   }
   TempData[0] = T_Report;
   TempData[1] = T_Report >> 8;

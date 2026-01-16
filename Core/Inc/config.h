@@ -16,11 +16,14 @@
 #define SVPWM           //define to use SVPWM
 #define Decouopling    //define to enable decoupling in current controller
 #define ANTI_WINDUP     //define to enable anti windup in PID controllers
+// #define FIELD_WEAKENING //define to enable field weakening control
+#define MTPA            //define to enable MTPA control
+#define DISABLE_MOT_OT //define to disable motor overtemperature fault
 
 // Motor number
-#define MOT_RR 
+// #define MOT_RR 
 // #define MOT_RL 
-// #define MOT_CAL
+#define MOT_CAL
 
 // Protections
 #define SOFTOCP 70
@@ -39,6 +42,7 @@
 #define HW_OC_TIME      2300    //should be in pwm cycles, 2300 is 100ms
 #define SOFT_OC_TIME    50      //should be in pwm cycles, 50 is 2ms
 #define ENC_TIME        50      //should be in pwm cycles, 50 is 2ms
+#define MAX_FLUX_ID     -40.0f //40A
 
 #define QKP             0.78f//2.3f //4.8f
 #define DKP             0.78f//2.3f //3.84f
@@ -91,7 +95,7 @@
 
 #ifdef FREQ_23KHZ
 #define FREQ 23000
-#define CCR 5127 // 23000Hz PWM frequency
+#define DEF_CCR 5127 // 23000Hz PWM frequency
 #define QTF 0.00003826f
 #define DTF 0.00003826f
 #define ABCTF 0.00003826f
@@ -105,7 +109,7 @@
 #define FILENAME "MOT_CAL_%04d%02d%02d_%02d%02d%02d_NEW_V2_4.bin"
 #else
 #ifdef MOT_CAL
-#define ZERO_ELECTRIC_ANGLE 6.08f //should be in radians
+#define ZERO_ELECTRIC_ANGLE 5.75f //should be in radians
 #define MOT_CURR 1.084f
 #define FILENAME "MOT_CAL_%04d%02d%02d_%02d%02d%02d_NEW_V2_4.bin"
 #endif
