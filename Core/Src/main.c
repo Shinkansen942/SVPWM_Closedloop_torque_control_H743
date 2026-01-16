@@ -900,15 +900,15 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     float Id_MTPA = 0.0f;
 
     #ifdef FIELD_WEAKENING
-    Id_fw = field_weaking_control(filtered_RPM,filtered_Iq,Id_controller_output,voltage_limit);
+    Id_fw = field_weaking_control(fabsf(filtered_RPM),fabsf(filtered_Iq),fabsf(Id_controller_output),voltage_limit);
     #endif
 
     #ifdef MTPA
-    Id_MTPA = MTPA_control(filtered_Iq);
+    Id_MTPA = MTPA_control(fabsf(filtered_Iq));
     #endif
     
     float Id_flux_control = Id_fw<Id_MTPA?Id_fw:Id_MTPA;
-    target_Id = Id_flux_control;
+    target_Id = _constrain(Id_flux_control,-MAX_FLUX_ID*fabsf(last_percent),0.0f);
     float max_Iq = sqrtf(max_current*max_current - target_Id*target_Id);
     target_Iq = _constrain(target_Iq,-max_Iq,max_Iq);
 

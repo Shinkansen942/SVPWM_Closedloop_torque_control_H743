@@ -18,12 +18,12 @@
 #define ANTI_WINDUP     //define to enable anti windup in PID controllers
 #define FIELD_WEAKENING //define to enable field weakening control
 #define MTPA            //define to enable MTPA control
-#define DISABLE_MOT_OT //define to disable motor overtemperature fault
+// #define DISABLE_MOT_OT //define to disable motor overtemperature fault
 
 // Motor number
 // #define MOT_RR 
-// #define MOT_RL 
-#define MOT_CAL
+#define MOT_RL 
+// #define MOT_CAL
 
 // Protections
 #define SOFTOCP 70
