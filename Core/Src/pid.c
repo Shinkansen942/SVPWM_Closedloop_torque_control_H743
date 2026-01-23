@@ -29,8 +29,8 @@ float PID_operator(float error, struct PIDController* pid){
     //anti_windup & back_calculation
     output = proportional + integral + derivative;
     anit_windup =  _constrain(output, -pid->limit, pid->limit) - output;
-
-    integral += (1.0f/pid->P)*anit_windup;
+    float Kaw = pid->P > 0.1 ? (1.0f / pid->P) : 10.0f;
+    integral += Kaw*anit_windup;
     integral = _constrain(integral, -pid->limit/1, pid->limit/1);
 
     // 将P,I,D三环的计算值加起来

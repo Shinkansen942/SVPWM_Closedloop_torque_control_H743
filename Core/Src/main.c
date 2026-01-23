@@ -279,6 +279,7 @@ pidc_t pid_controller_current_Iabc[3] = {
     {.P=DCKP,.I=DCKI,.D=PID_D,.output_ramp=PID_RAMP,.limit=PID_LIMIT,.error_prev=0,.output_prev=0,.integral_prev=0}
 };
 
+
 int16_t maxint16(int16_t a,int16_t b)
 {
   return a>b?a:b;
@@ -897,6 +898,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     filtered_Id=LowPassFilter_operator(Id,&filter_current_Id);
     
     float Id_fw = 0.0f;
+    float Iq_fw = target_Iq;
     float Id_MTPA = 0.0f;
 
     #ifdef FIELD_WEAKENING
@@ -906,12 +908,17 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     #ifdef MTPA
     Id_MTPA = MTPA_control(fabsf(filtered_Iq));
     #endif
-    
+
+    #ifdef FIELD_WEAKENING_ANGLE
+    Id_fw = Id_MTPA;
+    float fw_angle = field_weaking_angle_control(&Iq_fw, &Id_fw, Iq_controller_output, Id_controller_output, voltage_limit);
+    #endif
+
     float Id_flux_control = Id_fw<Id_MTPA?Id_fw:Id_MTPA;
     target_Id = _constrain(Id_flux_control,(-MAX_FLUX_ID)*_constrain(fabsf(last_percent)*4.0f,0.0f,1.0f),0.0f);
     float max_Iq = sqrtf(max_current*max_current - target_Id*target_Id);
-    target_Iq = _constrain(target_Iq,-max_Iq,max_Iq);
-    target_Iq = Id_fw<-MAX_TORQUE_FW_ID?0.0f:target_Iq;
+    target_Iq = _constrain(Iq_fw,-max_Iq,max_Iq);
+    target_Iq = Id_fw<-MAX_TORQUE_FW_ID ? 0.0f : target_Iq;
 
     Iq_controller_output=PID_operator(target_Iq-filtered_Iq,&pid_controller_current_Iq);
     Id_controller_output=PID_operator(target_Id-filtered_Id,&pid_controller_current_Id);

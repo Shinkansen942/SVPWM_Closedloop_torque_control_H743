@@ -17,6 +17,7 @@
 #define Decouopling    //define to enable decoupling in current controller
 #define ANTI_WINDUP     //define to enable anti windup in PID controllers
 #define FIELD_WEAKENING //define to enable field weakening control
+#define FIELD_WEAKENING_ANGLE //define to enable field weakening angle control
 #define MTPA            //define to enable MTPA control
 // #define DISABLE_MOT_OT //define to disable motor overtemperature fault
 
@@ -49,6 +50,8 @@
 #define DKP             0.78f//2.3f //3.84f
 #define QKI             350.0f//724.5f //3.0f
 #define DKI             350.0f//724.5f //3.0f
+#define FWKP           0.0f
+#define FWKI           1000.0f
 
 //MATLAB tuned PID values
 // #define QKP             0.226f
