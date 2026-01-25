@@ -3,7 +3,7 @@
 #include "config.h"
 #include "motor_control.h"
 
-#define FIELD_WEAKENING_DC_VOLTAGE_LIMIT 0.8f // 90% of DC bus voltage
+#define FIELD_WEAKENING_DC_VOLTAGE_LIMIT 0.9f // 90% of DC bus voltage
 
 // every motor constant and derived value should be line to neutral value
 
@@ -26,6 +26,8 @@ float field_weaking_control(float rpm, float Iq, float Vd, float Vdc)
     if ( idfw_numerator < 0.0f)
     {
         Idfw = 1.414*idfw_numerator / (omega_e * Ld);
+        _constrain(Idfw, -MAX_FLUX_ID, -MINIMUM_FW_ID);
+
     }
     return _constrain(Idfw, -MAX_FLUX_ID, 0.0f);
 }

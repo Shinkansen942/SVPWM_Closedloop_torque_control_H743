@@ -17,10 +17,12 @@
 #define Decouopling    //define to enable decoupling in current controller
 #define ANTI_WINDUP     //define to enable anti windup in PID controllers
 #define FIELD_WEAKENING //define to enable field weakening control
-#define MTPA            //define to enable MTPA control
+// #define MTPA            //define to enable MTPA control
 // #define DISABLE_MOT_OT //define to disable motor overtemperature fault
+// #define OVERSPEED_PROT  //define to enable overspeed protection
 
 // Motor number
+// #define MOT_FL
 // #define MOT_RR 
 #define MOT_RL 
 // #define MOT_CAL
@@ -39,16 +41,17 @@
 #define PID_RAMP 100000.0f
 #define PID_LIMIT 20.0f
 // #define RAMP_TIME 1.0f
-#define HW_OC_TIME      2300    //should be in pwm cycles, 2300 is 100ms
-#define SOFT_OC_TIME    50      //should be in pwm cycles, 50 is 2ms
-#define ENC_TIME        50      //should be in pwm cycles, 50 is 2ms
-#define MAX_FLUX_ID     50.0f   //40A
-#define MAX_TORQUE_FW_ID 30.0f //40A
+#define HW_OC_TIME          2300    //should be in pwm cycles, 2300 is 100ms
+#define SOFT_OC_TIME        50      //should be in pwm cycles, 50 is 2ms
+#define ENC_TIME            50      //should be in pwm cycles, 50 is 2ms
+#define MAX_FLUX_ID         40.0f   //40A
+#define MAX_TORQUE_FW_ID    30.0f   //40A
+#define MINIMUM_FW_ID     2.0f    //2A
 
 #define QKP             0.78f//2.3f //4.8f
 #define DKP             0.78f//2.3f //3.84f
-#define QKI             350.0f//724.5f //3.0f
-#define DKI             350.0f//724.5f //3.0f
+#define QKI             200.0f//724.5f //3.0f
+#define DKI             200.0f//724.5f //3.0f
 
 //MATLAB tuned PID values
 // #define QKP             0.226f
@@ -102,6 +105,7 @@
 #define ABCTF 0.00003826f
 #define RPMTF 0.04783f
 #define DCTF 0.04783f
+#define FWTF 0.04783f
 #endif
 
 #ifdef CAL_ZERO_ANGLE
@@ -113,6 +117,11 @@
 #define ZERO_ELECTRIC_ANGLE 5.75f //should be in radians
 #define MOT_CURR 1.084f
 #define FILENAME "MOT_CAL_%04d%02d%02d_%02d%02d%02d_NEW_V2_4.bin"
+#endif
+#ifdef MOT_FL
+#define ZERO_ELECTRIC_ANGLE 5.75f //should be in radians
+#define MOT_CURR 1.156f
+#define FILENAME "MOT_FL_%04d%02d%02d_%02d%02d%02d_NEW_V2_4.bin"
 #endif
 #ifdef MOT_RR
 #define ZERO_ELECTRIC_ANGLE 1.28f //should be in radians

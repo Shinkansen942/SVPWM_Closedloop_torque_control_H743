@@ -268,6 +268,7 @@ lpf_t filter_current_Id= {.Tf=DTF,.y_prev=0.0f}; //Tf=20ms
 lpf_t filter_current_Iabc[3] = {{.Tf = ABCTF,.y_prev=0.0f},{.Tf = ABCTF,.y_prev=0.0f},{.Tf = ABCTF,.y_prev=0.0f}}; //Tf=2ms
 lpf_t filter_crrent_DC_Iabc[3] = {{.Tf = DCTF,.y_prev=0.0f},{.Tf = DCTF,.y_prev=0.0f},{.Tf = DCTF,.y_prev=0.0f}}; //Tf=2ms
 lpf_t filter_RPM = {.Tf=RPMTF,.y_prev=0.0f};
+lpf_t filter_Idfw = {.Tf=FWTF,.y_prev=0.0f};
 lpf_t filter_report_torque = {.Tf=0.008f,.y_prev=0.0f}; //Tf=100ms
 pidc_t pid_controller_current_Iq = {.P=QKP,.I=QKI,.D=QKD,.output_ramp=PID_RAMP,.limit=PID_LIMIT,.error_prev=0,.output_prev=0,.integral_prev=0};
 pidc_t pid_controller_current_Id = {.P=DKP,.I=DKI,.D=DKD,.output_ramp=PID_RAMP,.limit=PID_LIMIT,.error_prev=0,.output_prev=0,.integral_prev=0};
@@ -776,6 +777,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
       last_percent = last_percent + delta;
       last_percent = percent_torque_requested;
       HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_SET);
+      if(voltage_power_supply < 50.0f)
+      {
+        Enter_READY_State();
+      }
     }
     else
     {
@@ -821,6 +826,13 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         Enter_ERROR_State(ERROR_ENC);
         #endif
       }
+      if (ADC2_arr[i] > 4096-ENC_UV)
+      {
+        #ifndef OPEN_LOOP_SPEED
+        Enter_ERROR_State(ERROR_ENC);
+        #endif
+      }
+      
     }
     enc_sum -= enc_buf[enc_index];
     enc_buf[enc_index] = enc_err;
@@ -901,6 +913,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
     #ifdef FIELD_WEAKENING
     Id_fw = field_weaking_control(fabsf(filtered_RPM),fabsf(filtered_Iq),fabsf(Id_controller_output),voltage_limit);
+    Id_fw = LowPassFilter_operator(Id_fw,&filter_Idfw);
     #endif
 
     #ifdef MTPA
@@ -908,18 +921,26 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     #endif
     
     float Id_flux_control = Id_fw<Id_MTPA?Id_fw:Id_MTPA;
-    target_Id = _constrain(Id_flux_control,(-MAX_FLUX_ID)*_constrain(fabsf(last_percent)*4.0f,0.0f,1.0f),0.0f);
+    // target_Id = _constrain(Id_flux_control,(-MAX_FLUX_ID)*fabsf(last_percent)*4.0f,0.0f);
+    target_Id = Id_flux_control;
+    // if(filtered_RPM > voltage_power_supply/(electrical_constant+0.02f) && last_percent == 0.0f)
+    // {
+    //   target_Iq = -1.0f * _sign(filtered_RPM);
+    // }
+    // target_Id = Id_flux_control;
     float max_Iq = sqrtf(max_current*max_current - target_Id*target_Id);
     target_Iq = _constrain(target_Iq,-max_Iq,max_Iq);
+    #ifdef OVERSPEED_PROT
     target_Iq = Id_fw<-MAX_TORQUE_FW_ID?0.0f:target_Iq;
+    #endif
 
     Iq_controller_output=PID_operator(target_Iq-filtered_Iq,&pid_controller_current_Iq);
     Id_controller_output=PID_operator(target_Id-filtered_Id,&pid_controller_current_Id);
 
     #ifdef Decouopling
     // Decoupling
-    float Vd_decoupling = (-1.0f)*(filtered_RPM*2*M_PI/60)*Lq*filtered_Iq;
-    float Vq_decoupling = (filtered_RPM*2*M_PI/60)*(Ld*filtered_Id+flux_linkage_m);
+    float Vd_decoupling = (-1.0f)*(4*filtered_RPM*2*M_PI/60)*Lq*filtered_Iq;
+    float Vq_decoupling = (4*filtered_RPM*2*M_PI/60)*(Ld*filtered_Id+flux_linkage_m);
     Vq_decoupling = _constrain(Vq_decoupling,-voltage_limit,voltage_limit);
     Vd_decoupling = _constrain(Vd_decoupling,-voltage_limit,voltage_limit);
     Id_controller_output += Vd_decoupling;
@@ -1049,8 +1070,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     log_buf[wr_log_buf_num][wr_log_index%3600].LGDCIU = (int16_t) roundf(target_Id*100);
     log_buf[wr_log_buf_num][wr_log_index%3600].LGDCIV = (int16_t) roundf(target_Iq*100);
     log_buf[wr_log_buf_num][wr_log_index%3600].LGDCIW = (int16_t) roundf(current_phase_dc[2]*100);
-    log_buf[wr_log_buf_num][wr_log_index%3600].LGVA = (int16_t) roundf(angle_pll*10);
-    log_buf[wr_log_buf_num][wr_log_index%3600].LGVB = (int16_t) roundf(speed_rad*10);
+    log_buf[wr_log_buf_num][wr_log_index%3600].LGVA = (int16_t) roundf(Id_fw*10);
+    log_buf[wr_log_buf_num][wr_log_index%3600].LGVB = (int16_t) roundf(Id_MTPA*10);
     log_buf[wr_log_buf_num][wr_log_index%3600].LGVC = (int16_t) roundf(Iabc_controller_output[2]*10);
     log_buf[wr_log_buf_num][wr_log_index%3600].LGRMSIU = (uint16_t) __HAL_TIM_GET_COUNTER(&htim5)>>16;
     log_buf[wr_log_buf_num][wr_log_index%3600].LGRMSIV = (uint16_t) __HAL_TIM_GET_COUNTER(&htim5);
@@ -1472,6 +1493,21 @@ void Enter_ERROR_State(INV_Errortypedef error)
   enable_hw_oc = 0;
   HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_RESET);
   HAL_GPIO_WritePin(LED_RUN_GPIO_Port,LED_RUN_Pin,GPIO_PIN_RESET);
+  LowPassFilter_reset(&filter_current_Iabc[0]);
+  LowPassFilter_reset(&filter_current_Iabc[1]);
+  LowPassFilter_reset(&filter_current_Iabc[2]);
+  LowPassFilter_reset(&filter_current_Iq);
+  LowPassFilter_reset(&filter_current_Id);
+  // LowPassFilter_reset(&filter_RPM);
+}
+
+void Enter_READY_State(void)
+{
+  inverter_state = STATE_READY;
+  error_state = ERROR_NONE;
+  enable_hw_oc = 0;
+  HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(LED_RUN_GPIO_Port,LED_RUN_Pin,GPIO_PIN_SET);
   LowPassFilter_reset(&filter_current_Iabc[0]);
   LowPassFilter_reset(&filter_current_Iabc[1]);
   LowPassFilter_reset(&filter_current_Iabc[2]);
