@@ -20,6 +20,7 @@
 // #define MTPA            //define to enable MTPA control
 // #define DISABLE_MOT_OT //define to disable motor overtemperature fault
 // #define OVERSPEED_PROT  //define to enable overspeed protection
+#define FW_STARTUP_ID_FIX   //define to enable fixed d-axis current during field weakening startup
 
 // Motor number
 // #define MOT_FL
@@ -48,10 +49,10 @@
 #define MAX_TORQUE_FW_ID    30.0f   //40A
 #define MINIMUM_FW_ID     2.0f    //2A
 
-#define QKP             0.78f//2.3f //4.8f
-#define DKP             0.78f//2.3f //3.84f
+#define QKP             0.8f//2.3f //4.8f
+#define DKP             0.6f//2.3f //3.84f
 #define QKI             200.0f//724.5f //3.0f
-#define DKI             200.0f//724.5f //3.0f
+#define DKI             100.0f//724.5f //3.0f
 
 //MATLAB tuned PID values
 // #define QKP             0.226f

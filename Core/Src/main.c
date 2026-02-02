@@ -737,6 +737,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
       return;
     }
     run = 0;
+
     HAL_GPIO_TogglePin(LED_TIM_GPIO_Port,LED_TIM_Pin);
     uint16_t ADC1_arr[4] = {0};
     uint16_t ADC2_arr[4] = {0};
@@ -907,12 +908,17 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     cal_Idq(current_phase, _electricalAngle(angle_now, pole_pairs), &Id, &Iq);
     filtered_Iq=LowPassFilter_operator(Iq,&filter_current_Iq);
     filtered_Id=LowPassFilter_operator(Id,&filter_current_Id);
+
+    float Vd_decoupling = (-1.0f)*(4*filtered_RPM*2*M_PI/60)*Lq*filtered_Iq;
+    float Vq_decoupling = (4*filtered_RPM*2*M_PI/60)*(Ld*filtered_Id+flux_linkage_m);
+    Vq_decoupling = _constrain(Vq_decoupling,-voltage_limit,voltage_limit);
+    Vd_decoupling = _constrain(Vd_decoupling,-voltage_limit,voltage_limit);
     
     float Id_fw = 0.0f;
     float Id_MTPA = 0.0f;
 
     #ifdef FIELD_WEAKENING
-    Id_fw = field_weaking_control(fabsf(filtered_RPM),fabsf(filtered_Iq),fabsf(Id_controller_output),voltage_limit);
+    Id_fw = field_weaking_control(fabsf(filtered_RPM),fabsf(filtered_Iq),fabsf(Iq_controller_output),voltage_limit);
     Id_fw = LowPassFilter_operator(Id_fw,&filter_Idfw);
     #endif
 
@@ -939,10 +945,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
     #ifdef Decouopling
     // Decoupling
-    float Vd_decoupling = (-1.0f)*(4*filtered_RPM*2*M_PI/60)*Lq*filtered_Iq;
-    float Vq_decoupling = (4*filtered_RPM*2*M_PI/60)*(Ld*filtered_Id+flux_linkage_m);
-    Vq_decoupling = _constrain(Vq_decoupling,-voltage_limit,voltage_limit);
-    Vd_decoupling = _constrain(Vd_decoupling,-voltage_limit,voltage_limit);
     Id_controller_output += Vd_decoupling;
     Iq_controller_output += Vq_decoupling;
     #endif
@@ -1247,7 +1249,12 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
             {
               enc_buf[i] = 0;
             }
-            
+            #ifdef FW_STARTUP_ID_FIX
+            if(fabsf(filtered_RPM) > 6000.0f)
+            {
+              filter_Idfw.y_prev = -40.0f;
+            }
+            #endif
             
             HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_SET);
           // disable
@@ -1258,7 +1265,7 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
             percent_torque_requested = 0;
             enable_hw_oc = 0;
             HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_RESET);
-            got_date = 0;
+            // got_date = 0;
           }
           else
           {
