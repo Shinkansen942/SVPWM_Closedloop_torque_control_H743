@@ -21,6 +21,7 @@
 // #define DISABLE_MOT_OT //define to disable motor overtemperature fault
 // #define OVERSPEED_PROT  //define to enable overspeed protection
 #define FW_STARTUP_ID_FIX   //define to enable fixed d-axis current during field weakening startup
+#define OPEN_LOOP_TEST //define to enable open loop test mode
 
 // Motor number
 // #define MOT_FL
@@ -76,7 +77,7 @@
 #define T_DERATE_START      700      //should be 10 times in deg C, 500 is 50 deg C
 #define T_DERATE_END        850      //should be 10 times in deg C, 800 is 80 deg C
 
-#define FREQ_23KHZ
+#define FREQ_115KHZ
 
 #ifdef FREQ_11KHZ
 #define FREQ 11000
@@ -101,6 +102,17 @@
 #ifdef FREQ_23KHZ
 #define FREQ 23000
 #define DEF_CCR 5127 // 23000Hz PWM frequency
+#define QTF 0.00003826f
+#define DTF 0.00003826f
+#define ABCTF 0.00003826f
+#define RPMTF 0.04783f
+#define DCTF 0.04783f
+#define FWTF 0.04783f
+#endif
+
+#ifdef FREQ_115KHZ
+#define FREQ 23000
+#define DEF_CCR 1025 // 23000Hz PWM frequency
 #define QTF 0.00003826f
 #define DTF 0.00003826f
 #define ABCTF 0.00003826f

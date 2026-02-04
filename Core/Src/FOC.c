@@ -40,3 +40,8 @@ float MTPA_control(float Iq)
     Id_optimal = _constrain(Id_optimal,-MAX_FLUX_ID,0.0f);
     return Id_optimal;
 }
+
+void open_loop_test(TIM_TypeDef * TIM_BASE)
+{
+    setPwm(0.5f,0.5f,0.5f,TIM_BASE);
+}
