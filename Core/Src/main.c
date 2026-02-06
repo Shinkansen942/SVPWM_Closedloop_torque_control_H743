@@ -84,6 +84,7 @@ static void MPU_Config(void);
 float MCU_MapValue(uint16_t in_value, float in_min, float in_max, float out_min, float out_max);
 float MCU_TemperatureCalculate(uint16_t ts_data);
 void Enter_ERROR_State(INV_Errortypedef error);
+void Enter_READY_State(void);
 void Config_Fdcan1(void);
 void CAN_Send_State(uint16_t DCV, int16_t DCA);
 void CAN_Send_Status(uint16_t report_status,int16_t FB_Torque,int16_t Speed);
