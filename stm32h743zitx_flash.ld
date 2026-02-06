@@ -177,24 +177,32 @@ SECTIONS
     . = ALIGN(8);
   } >DTCMRAM
 
-  ._ADC1_Area (NOLOAD):
+  ._ADC1_Area (NOLOAD) :
   {
     . = ALIGN(32);
+    *(._ADC1_Area)
+    *(._ADC1_Area*)
   } > RAM
 
-  ._ADC2_Area (NOLOAD):
+  ._ADC2_Area (NOLOAD) :
   {
     . = ALIGN(32);
+    *(._ADC1_Area)
+    *(._ADC1_Area*)
   } > RAM
 
-  ._ADC3_Area (NOLOAD):
+  ._ADC3_Area (NOLOAD) :
   {
     . = ALIGN(32);
+    *(._ADC3_Area)
+    *(._ADC3_Area*)
   } > RAM
 
-  ._RAM_Area (NOLOAD):
+  ._RAM_Area (NOLOAD) :
   {
     . = ALIGN(32);
+    *(._RAM_Area)
+    *(._RAM_Area*)
   } > RAM
 
   ._RAM_Area_Unaligned :
