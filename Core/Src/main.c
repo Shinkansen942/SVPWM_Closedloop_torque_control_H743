@@ -464,6 +464,7 @@ int main(void)
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
+  HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_1);
   HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_1);
   HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_2);
   HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_3);
@@ -537,7 +538,8 @@ int main(void)
 
   HAL_GPIO_WritePin(LED_SD_GPIO_Port,LED_SD_Pin,GPIO_PIN_SET);
   HAL_TIM_Base_Start_IT(&htim1); 
-  HAL_TIM_Base_Start_IT(&htim3);
+  HAL_TIM_Base_Start_IT(&htim4);
+  // HAL_TIM_Base_Start_IT(&htim3);
   prev_sd = __HAL_TIM_GET_COUNTER(&htim2);
   prev_new_file = __HAL_TIM_GET_COUNTER(&htim2);
   /* USER CODE END 2 */
@@ -731,24 +733,15 @@ void PeriphCommonClock_Config(void)
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
   // Check which version of the timer triggered this callback and toggle LED
-  if (htim == &htim1)
+  if (htim == &htim4)
   {
 
-    #ifndef FREQ_115KHZ
     if(!run)
     {
       run = 1;
       return;
     }
     run = 0;
-    #endif
-    #ifdef FREQ_115KHZ
-    if(++run < 10)
-    {
-      return;
-    }
-    run = 0;
-    #endif
 
     HAL_GPIO_TogglePin(LED_TIM_GPIO_Port,LED_TIM_Pin);
     uint16_t ADC1_arr[4] = {0};
@@ -823,12 +816,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     indexStatus++;
     CAN_Timer++;
 
-    // #ifdef OPEN_LOOP_TEST
-    // inverter_state = STATE_RUNNING;
-    // open_loop_test(TIM1);
-    // HAL_GPIO_TogglePin(LED_TIM_GPIO_Port,LED_TIM_Pin);
-    // return;
-    // #endif
+    #ifdef OPEN_LOOP_TEST
+    inverter_state = STATE_RUNNING;
+    open_loop_test(TIM1);
+    HAL_GPIO_TogglePin(LED_TIM_GPIO_Port,LED_TIM_Pin);
+    return;
+    #endif
     
     float speed_rad, angle_pll;
     Get_Encoder_Angle(ADC2_arr,&angle_now,&speed_rad,&angle_pll);
