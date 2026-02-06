@@ -383,6 +383,7 @@ int main(void)
   MX_FATFS_Init();
   MX_TIM3_Init();
   MX_CRC_Init();
+  MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
   HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_RESET);
   HAL_GPIO_WritePin(LED_ERR_GPIO_Port,LED_ERR_Pin,GPIO_PIN_SET);
