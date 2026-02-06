@@ -187,8 +187,8 @@ SECTIONS
   ._ADC2_Area (NOLOAD) :
   {
     . = ALIGN(32);
-    *(._ADC1_Area)
-    *(._ADC1_Area*)
+    *(._ADC2_Area)
+    *(._ADC2_Area*)
   } > RAM
 
   ._ADC3_Area (NOLOAD) :
