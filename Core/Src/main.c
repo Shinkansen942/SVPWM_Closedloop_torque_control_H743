@@ -916,6 +916,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     Vd_decoupling = _constrain(Vd_decoupling,-voltage_limit,voltage_limit);
     
     float Id_fw = 0.0f;
+    float Iq_fw = target_Iq;
     float Id_MTPA = 0.0f;
 
     #ifdef FIELD_WEAKENING
@@ -925,6 +926,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
     #ifdef MTPA
     Id_MTPA = MTPA_control(fabsf(filtered_Iq));
+    #endif
+
+    #ifdef FIELD_WEAKENING_ANGLE
+    Id_fw = Id_MTPA;
+    float fw_angle = field_weaking_angle_control(&Iq_fw, &Id_fw, Iq_controller_output, Id_controller_output, voltage_limit);
     #endif
     
     float Id_flux_control = Id_fw<Id_MTPA?Id_fw:Id_MTPA;
