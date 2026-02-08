@@ -17,7 +17,7 @@
 #define Decouopling    //define to enable decoupling in current controller
 #define ANTI_WINDUP     //define to enable anti windup in PID controllers
 #define FIELD_WEAKENING //define to enable field weakening control
-#define FIELD_WEAKENING_ANGLE // define to enable field weakening angle control
+// #define FIELD_WEAKENING_ANGLE // define to enable field weakening angle control
 // #define MTPA            //define to enable MTPA control
 // #define DISABLE_MOT_OT //define to disable motor overtemperature fault
 // #define OVERSPEED_PROT  //define to enable overspeed protection
