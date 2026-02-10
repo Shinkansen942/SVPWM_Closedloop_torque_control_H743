@@ -25,8 +25,8 @@
 
 // Motor number
 // #define MOT_FL
-// #define MOT_RR 
-#define MOT_RL 
+#define MOT_RR 
+// #define MOT_RL 
 // #define MOT_CAL
 
 // Protections
@@ -46,14 +46,14 @@
 #define HW_OC_TIME          2300    //should be in pwm cycles, 2300 is 100ms
 #define SOFT_OC_TIME        50      //should be in pwm cycles, 50 is 2ms
 #define ENC_TIME            50      //should be in pwm cycles, 50 is 2ms
-#define MAX_FLUX_ID         40.0f   //40A
+#define MAX_FLUX_ID         60.0f   //60A                                                                                                          .0f   //40A
 #define MAX_TORQUE_FW_ID    30.0f   //40A
-#define MINIMUM_FW_ID     2.0f    //2A
+#define MINIMUM_FW_ID       2.0f    //2A
 
 #define QKP     0.8f   // 2.3f //4.8f
 #define DKP     0.6f   // 2.3f //3.84f
 #define QKI     200.0f // 724.5f //3.0f
-#define DKI     100.0f // 724.5f //3.0f
+#define DKI     10.0f // 724.5f //3.0f
 #define FWKP    0.0f
 #define FWKI    1000.0f
 

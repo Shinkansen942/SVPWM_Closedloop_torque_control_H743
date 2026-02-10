@@ -84,6 +84,7 @@ static void MPU_Config(void);
 float MCU_MapValue(uint16_t in_value, float in_min, float in_max, float out_min, float out_max);
 float MCU_TemperatureCalculate(uint16_t ts_data);
 void Enter_ERROR_State(INV_Errortypedef error);
+void Enter_READY_State(void);
 void Config_Fdcan1(void);
 void CAN_Send_State(uint16_t DCV, int16_t DCA);
 void CAN_Send_Status(uint16_t report_status,int16_t FB_Torque,int16_t Speed);
@@ -915,6 +916,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     Vd_decoupling = _constrain(Vd_decoupling,-voltage_limit,voltage_limit);
     
     float Id_fw = 0.0f;
+    float Iq_fw = target_Iq;
     float Id_MTPA = 0.0f;
 
     #ifdef FIELD_WEAKENING
@@ -924,6 +926,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
     #ifdef MTPA
     Id_MTPA = MTPA_control(fabsf(filtered_Iq));
+    #endif
+
+    #ifdef FIELD_WEAKENING_ANGLE
+    Id_fw = Id_MTPA;
+    float fw_angle = field_weaking_angle_control(&Iq_fw, &Id_fw, Iq_controller_output, Id_controller_output, voltage_limit);
     #endif
     
     float Id_flux_control = Id_fw<Id_MTPA?Id_fw:Id_MTPA;
