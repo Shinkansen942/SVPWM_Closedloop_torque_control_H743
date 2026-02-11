@@ -25,7 +25,7 @@ float field_weaking_control(float rpm, float Iq, float Vd, float Vdc)
     float omega_e = fabsf(rpm * pole_multipler * 2.0f * M_PI / 60.0f);
     Vdc = Vdc*FIELD_WEAKENING_DC_VOLTAGE_LIMIT; // convert DC bus voltage to line-line RMS voltage and limit to 90%
     omega_e = _constrain(omega_e, 1.0f, infinity()); // prevent division by zero
-    float Vq = sqrtf(Vdc * Vdc - Vd * Vd)*0.707f;
+    float Vq = sqrtf(_constrain(Vdc * Vdc - Vd * Vd,0,infinity()))*0.707f;
     float Emag = rpm*electrical_constant;
     float idfw_numerator = Vq - Rs * fabsf(Iq) * 0.707 - Emag;
     float Idfw = 0.0f;
