@@ -3,6 +3,7 @@
 #include "config.h"
 #include "motor_control.h"
 #include "pid.h"
+#include  "lowpass_filter.h"
 
 #define FIELD_WEAKENING_DC_VOLTAGE_LIMIT 0.9f // 90% of DC bus voltage
 
@@ -17,6 +18,7 @@ const int pole_multipler = 4; // for 4 pole motor
 const float modulation_ref = 0.9f;
 
 pidc_t pid_controller_fw = {.P = FWKP, .I = FWKI, .D = PID_D, .output_ramp = PID_RAMP, .limit = 1, .error_prev = 0, .output_prev = 0, .integral_prev = 0};
+extern lpf_t filter_Idfw;
 
 float field_weaking_control(float rpm, float Iq, float Vd, float Vdc)
 {
@@ -33,7 +35,9 @@ float field_weaking_control(float rpm, float Iq, float Vd, float Vdc)
         _constrain(Idfw, -MAX_FLUX_ID, -MINIMUM_FW_ID);
 
     }
-    return _constrain(Idfw, -MAX_FLUX_ID, 0.0f);
+    Idfw = LowPassFilter_operator(Idfw,&filter_Idfw);
+    Idfw = _constrain(Idfw, -MAX_FLUX_ID, 0.0f);
+    return Idfw;
 }
 
 float MTPA_control(float Iq)

@@ -53,7 +53,7 @@
 #define QKP     0.8f   // 2.3f //4.8f
 #define DKP     0.6f   // 2.3f //3.84f
 #define QKI     200.0f // 724.5f //3.0f
-#define DKI     10.0f // 724.5f //3.0f
+#define DKI     200.0f // 724.5f //3.0f
 #define FWKP    0.0f
 #define FWKI    1000.0f
 

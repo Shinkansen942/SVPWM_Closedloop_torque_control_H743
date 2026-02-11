@@ -921,7 +921,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
     #ifdef FIELD_WEAKENING
     Id_fw = field_weaking_control(fabsf(filtered_RPM),fabsf(filtered_Iq),fabsf(Iq_controller_output),voltage_limit);
-    Id_fw = LowPassFilter_operator(Id_fw,&filter_Idfw);
     #endif
 
     #ifdef MTPA
