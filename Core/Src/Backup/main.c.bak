@@ -921,7 +921,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
     #ifdef FIELD_WEAKENING
     Id_fw = field_weaking_control(fabsf(filtered_RPM),fabsf(filtered_Iq),fabsf(Iq_controller_output),voltage_limit);
-    Id_fw = LowPassFilter_operator(Id_fw,&filter_Idfw);
     #endif
 
     #ifdef MTPA
@@ -931,6 +930,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     #ifdef FIELD_WEAKENING_ANGLE
     Id_fw = Id_MTPA;
     float fw_angle = field_weaking_angle_control(&Iq_fw, &Id_fw, Iq_controller_output, Id_controller_output, voltage_limit);
+    #endif
+
+    #ifdef PERMANENT_FLUX
+    Id_fw = -MAX_FLUX_ID;
     #endif
     
     float Id_flux_control = Id_fw<Id_MTPA?Id_fw:Id_MTPA;

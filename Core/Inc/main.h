@@ -125,15 +125,12 @@ void Error_Handler(void);
 #define LED_ERR_GPIO_Port GPIOD
 #define BUT_G2_Pin GPIO_PIN_2
 #define BUT_G2_GPIO_Port GPIOG
-#define BUT_G2_EXTI_IRQn EXTI2_IRQn
 #define LV_Fault_Pin GPIO_PIN_5
 #define LV_Fault_GPIO_Port GPIOG
-#define LV_Fault_EXTI_IRQn EXTI9_5_IRQn
 #define GATE_Ready_Pin GPIO_PIN_1
 #define GATE_Ready_GPIO_Port GPIOD
 #define GATE_Fault_Pin GPIO_PIN_3
 #define GATE_Fault_GPIO_Port GPIOD
-#define GATE_Fault_EXTI_IRQn EXTI3_IRQn
 #define Motor_Enable_Pin GPIO_PIN_5
 #define Motor_Enable_GPIO_Port GPIOD
 #define OC_Fault_Pin GPIO_PIN_6

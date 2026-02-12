@@ -52,9 +52,9 @@
 #define MINIMUM_FW_ID       2.0f    //2A
 
 #define QKP     0.8f   // 2.3f //4.8f
-#define DKP     0.6f   // 2.3f //3.84f
+#define DKP     3.0f   // 2.3f //3.84f
 #define QKI     200.0f // 724.5f //3.0f
-#define DKI     200.0f // 724.5f //3.0f
+#define DKI     25.0f // 724.5f //3.0f
 #define FWKP    0.0f
 #define FWKI    1000.0f
 
@@ -129,12 +129,12 @@
 #define FILENAME "MOT_FL_%04d%02d%02d_%02d%02d%02d_NEW_V2_4.bin"
 #endif
 #ifdef MOT_RR
-#define ZERO_ELECTRIC_ANGLE 1.28f //should be in radians
+#define ZERO_ELECTRIC_ANGLE 1.33f //should be in radians
 #define MOT_CURR 0.907f
 #define FILENAME "MOT_RR_%04d%02d%02d_%02d%02d%02d_NEW_V2_4.bin"
 #endif
 #ifdef MOT_RL
-#define ZERO_ELECTRIC_ANGLE 4.74f //should be in radians
+#define ZERO_ELECTRIC_ANGLE 4.86f //should be in radians
 #define MOT_CURR 0.991f
 #define FILENAME "MOT_RL_%04d%02d%02d_%02d%02d%02d_NEW_V2_4.bin"
 #endif
