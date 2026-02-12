@@ -22,6 +22,7 @@
 // #define DISABLE_MOT_OT //define to disable motor overtemperature fault
 // #define OVERSPEED_PROT  //define to enable overspeed protection
 #define FW_STARTUP_ID_FIX   //define to enable fixed d-axis current during field weakening startup
+// #define PERMANENT_FLUX      //define to always apply maximum flux weakening current
 
 // Motor number
 // #define MOT_FL
@@ -46,7 +47,7 @@
 #define HW_OC_TIME          2300    //should be in pwm cycles, 2300 is 100ms
 #define SOFT_OC_TIME        50      //should be in pwm cycles, 50 is 2ms
 #define ENC_TIME            50      //should be in pwm cycles, 50 is 2ms
-#define MAX_FLUX_ID         60.0f   //60A                                                                                                          .0f   //40A
+#define MAX_FLUX_ID         30.0f   //60A                                                                                                          .0f   //40A
 #define MAX_TORQUE_FW_ID    30.0f   //40A
 #define MINIMUM_FW_ID       2.0f    //2A
 

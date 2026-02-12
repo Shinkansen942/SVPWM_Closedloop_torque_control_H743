@@ -931,6 +931,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     Id_fw = Id_MTPA;
     float fw_angle = field_weaking_angle_control(&Iq_fw, &Id_fw, Iq_controller_output, Id_controller_output, voltage_limit);
     #endif
+
+    #ifdef PERMANENT_FLUX
+    Id_fw = -MAX_FLUX_ID;
+    #endif
     
     float Id_flux_control = Id_fw<Id_MTPA?Id_fw:Id_MTPA;
     // target_Id = _constrain(Id_flux_control,(-MAX_FLUX_ID)*fabsf(last_percent)*4.0f,0.0f);
