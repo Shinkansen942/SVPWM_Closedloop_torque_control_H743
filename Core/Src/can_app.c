@@ -14,19 +14,17 @@
 #include <string.h>
 #include <math.h>
 #include "time.h"
+#include "foc_loop.h"
 
 /* ================================================================
  *  Extern declarations – variables defined in other modules
  * ================================================================ */
 
+// --- Motor parameters (from main.c) ---
+extern motor_params_t motor;
+
 // --- Motor / FOC control (from main.c) ---
-extern float    voltage_power_supply;
-extern float    percent_torque_requested;
-extern float    last_percent;
-extern int      enable_hw_oc;
-extern float    filtered_RPM;
-extern float    zero_electric_angle;
-extern uint8_t  fast_stop_enable;
+extern foc_state_t foc;
 extern float    Mot_Curr;
 extern uint32_t indexMusic;
 
@@ -50,7 +48,7 @@ extern pidc_t pid_controller_current_Id;
 extern pidc_t pid_controller_current_Iabc[3];
 
 // --- Temperature variables & lookup tables (from main.c) ---
-extern int16_t       T_Report, T_Mot, T_MCU, T_U, T_V, T_W;
+extern telemetry_t telem;
 extern int16_t       Mot_Conv[];
 extern int16_t       MCU_Conv[];
 extern const int16_t Inv_Conv[];
@@ -249,30 +247,30 @@ void CAN_Send_Status(uint16_t report_status ,int16_t FB_Torque, int16_t Speed)
 void CAN_Send_Temp(uint16_t ADC_arr[6])
 {
   uint8_t TempData[6];
-  T_Mot = Mot_Conv[ADC_arr[2]>>6];
-  T_MCU = MCU_Conv[ADC_arr[1]>>6];
-  T_U = Inv_Conv[ADC_arr[3]>>6];
-  T_V = Inv_Conv[ADC_arr[4]>>6];
-  T_W = Inv_Conv[ADC_arr[5]>>6];
-  T_Report = maxint16(T_U,maxint16(T_V,T_W));
+  telem.T_Mot = Mot_Conv[ADC_arr[2]>>6];
+  telem.T_MCU = MCU_Conv[ADC_arr[1]>>6];
+  telem.T_U = Inv_Conv[ADC_arr[3]>>6];
+  telem.T_V = Inv_Conv[ADC_arr[4]>>6];
+  telem.T_W = Inv_Conv[ADC_arr[5]>>6];
+  telem.T_Report = maxint16(telem.T_U, maxint16(telem.T_V, telem.T_W));
   //OTP
-  if(maxint16(T_Report,T_MCU) > MOS_OTP)
+  if(maxint16(telem.T_Report, telem.T_MCU) > MOS_OTP)
   {
     // Enter_ERROR_State(ERROR_INV_OT);
   }
-  if(T_Mot > MOT_OTP || T_Mot < MOT_UTP)
+  if(telem.T_Mot > MOT_OTP || telem.T_Mot < MOT_UTP)
   {
     #ifndef DISABLE_MOT_OT
     Enter_ERROR_State(ERROR_MOT_OT);
     #endif
   }
-  TempData[0] = T_Report;
-  TempData[1] = T_Report >> 8;
-  TempData[2] = T_MCU;
-  TempData[3] = T_MCU >> 8;
-  TempData[4] = T_Mot;
-  TempData[5] = T_Mot >> 8;
-  CAN1_SetMsg(&TempHeader,TempData);
+  TempData[0] = telem.T_Report;
+  TempData[1] = telem.T_Report >> 8;
+  TempData[2] = telem.T_MCU;
+  TempData[3] = telem.T_MCU >> 8;
+  TempData[4] = telem.T_Mot;
+  TempData[5] = telem.T_Mot >> 8;
+  CAN1_SetMsg(&TempHeader, TempData);
 }
 
 void CAN_Send_Heartbeat(void)
@@ -360,29 +358,29 @@ void CAN_Send_Perameter(void)
 
 void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
 {
-  if((RxFifo0ITs & FDCAN_IT_RX_FIFO0_NEW_MESSAGE)!=0)
+  if ((RxFifo0ITs & FDCAN_IT_RX_FIFO0_NEW_MESSAGE)!=0)
   {
     HAL_GPIO_TogglePin(LED_CAN_GPIO_Port,LED_CAN_Pin);
     uint8_t RxData1[6];
     HAL_FDCAN_GetRxMessage(hfdcan,FDCAN_RX_FIFO0,&RxHeader1,RxData1);
-    if(hfdcan->Instance == FDCAN1)
+    if (hfdcan->Instance == FDCAN1)
     {
-      if(RxHeader1.Identifier == CAN_ID_CONTROL+MOT_ID)
+      if (RxHeader1.Identifier == CAN_ID_CONTROL+MOT_ID)
       {
         int16_t torque_command;
         control = RxData1[0] | (uint16_t)RxData1[1] << 8;
         if(inverter_state != STATE_ERROR)
         {
           // enable
-          if(control & CTRL_ENABLE && voltage_power_supply >= 20 && inverter_state == STATE_READY && HAL_GPIO_ReadPin(GATE_Ready_GPIO_Port,GATE_Ready_Pin) ==
+          if (control & CTRL_ENABLE && motor.voltage_power_supply >= 20 && inverter_state == STATE_READY && HAL_GPIO_ReadPin(GATE_Ready_GPIO_Port,GATE_Ready_Pin) ==
 GPIO_PIN_SET )
           {
             inverter_state = STATE_RUNNING;
             indexMusic = 0;
             HAL_GPIO_WritePin(LED_ERR_GPIO_Port,LED_ERR_Pin,GPIO_PIN_RESET);
             HAL_GPIO_WritePin(LED_RUN_GPIO_Port,LED_RUN_Pin,GPIO_PIN_SET);
-            percent_torque_requested = 0;
-            enable_hw_oc = 1;
+            foc.percent_torque_requested = 0;
+            foc.enable_hw_oc = 1;
             for (size_t i = 0; i < HW_OC_TIME; i++)
             {
               oc_buf[i] = 0;
@@ -404,7 +402,7 @@ GPIO_PIN_SET )
               enc_buf[i] = 0;
             }
             #ifdef FW_STARTUP_ID_FIX
-            if(fabsf(filtered_RPM) > 6000.0f)
+            if (fabsf(foc.filtered_RPM) > 6000.0f)
             {
               filter_Idfw.y_prev = -40.0f;
             }
@@ -412,18 +410,18 @@ GPIO_PIN_SET )
 
             HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_SET);
           // disable
-          }else if(!(control & CTRL_ENABLE) && inverter_state == STATE_RUNNING)
+          } else if (!(control & CTRL_ENABLE) && inverter_state == STATE_RUNNING)
           {
             inverter_state = STATE_READY;
             HAL_GPIO_WritePin(LED_ERR_GPIO_Port,LED_ERR_Pin,GPIO_PIN_RESET);
-            percent_torque_requested = 0;
-            enable_hw_oc = 0;
+            foc.percent_torque_requested = 0;
+            foc.enable_hw_oc = 0;
             HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_RESET);
             // got_date = 0;
           }
           else
           {
-            enable_hw_oc = 0;
+            foc.enable_hw_oc = 0;
             HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_RESET);
           }
         }
@@ -434,7 +432,7 @@ GPIO_PIN_SET )
           error_state = ERROR_NONE;
         }
         torque_command = RxData1[2] | RxData1[3] << 8;
-        percent_torque_requested = (float)torque_command/1000;
+        foc.percent_torque_requested = (float)torque_command/1000;
         CAN_Timer = 0;
       }
     }
@@ -524,11 +522,11 @@ void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo1ITs)
           break;
 
         case 0x31:
-          zero_electric_angle = val;
+          motor.zero_electric_angle = val;
           break;
 
         case 0x41:
-          fast_stop_enable = (uint8_t) val;
+          foc.fast_stop_enable = (uint8_t) val;
           break;
 
         default:

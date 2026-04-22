@@ -7,13 +7,14 @@
 #include "state_machine.h"
 #include "main.h"             // GPIO defines (Motor_Enable_Pin, LED_RUN_Pin, ...)
 #include "lowpass_filter.h"   // LowPassFilter_reset()
+#include "foc_loop.h"         // foc_state_t
 
 /* ================================================================
  *  Extern declarations – variables defined in other modules
  * ================================================================ */
 
-// --- Motor control (from main.c) ---
-extern int    enable_hw_oc;
+// --- FOC state (from foc_loop.h & main.c) ---
+extern foc_state_t foc;
 extern lpf_t  filter_current_Iabc[3];
 extern lpf_t  filter_current_Iq;
 extern lpf_t  filter_current_Id;
@@ -33,7 +34,7 @@ void Enter_ERROR_State(INV_Errortypedef error)
 {
   inverter_state = STATE_ERROR;
   error_state = error;
-  enable_hw_oc = 0;
+  foc.enable_hw_oc = 0;
   HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_RESET);
   HAL_GPIO_WritePin(LED_RUN_GPIO_Port,LED_RUN_Pin,GPIO_PIN_RESET);
   LowPassFilter_reset(&filter_current_Iabc[0]);
@@ -48,7 +49,7 @@ void Enter_READY_State(void)
 {
   inverter_state = STATE_READY;
   error_state = ERROR_NONE;
-  enable_hw_oc = 0;
+  foc.enable_hw_oc = 0;
   HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_RESET);
   HAL_GPIO_WritePin(LED_RUN_GPIO_Port,LED_RUN_Pin,GPIO_PIN_SET);
   LowPassFilter_reset(&filter_current_Iabc[0]);

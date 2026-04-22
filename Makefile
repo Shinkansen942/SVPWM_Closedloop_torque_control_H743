@@ -94,7 +94,21 @@ Middlewares/Third_Party/FatFs/src/option/cc950.c \
 Core/Src/mdma.c \
 Core/Src/crc.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_crc.c \
-Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_crc_ex.c
+Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_crc_ex.c \
+Core/Src/FOC.c \
+Core/Src/can_app.c \
+Core/Src/current_sense.c \
+Core/Src/foc_utils.c \
+Core/Src/hw_callbacks.c \
+Core/Src/logger.c \
+Core/Src/lowpass_filter.c \
+Core/Src/motor_control.c \
+Core/Src/pid.c \
+Core/Src/sincos_encoder.c \
+Core/Src/state_machine.c \
+Core/Src/PLL/PLL.c \
+Core/Src/PLL/PLL_data.c \
+Core/Src/PLL/rt_nonfinite.c
 
 # ASM sources
 ASM_SOURCES =  \
