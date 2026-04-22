@@ -112,25 +112,6 @@ uint16_t log_subsec = 0;
 
 // Moving RMS Buffers
 protection_t prot = {0};
-int16_t RMS_buf[3][10000] = {{0}};
-uint32_t RMS_sum[3] = {0};
-uint16_t indexRMS = 0;
-
-
-// __attribute__((section("._RAM_D2_Area")))
-uint8_t oc_buf[HW_OC_TIME] = {0};
-uint16_t oc_index = 0;
-uint16_t oc_sum = 0;
-
-// __attribute__((section("._RAM_D2_Area")))
-uint8_t soft_oc_buf[SOFT_OC_TIME] = {0};
-uint16_t soft_oc_index = 0;
-uint16_t soft_oc_sum = 0;
-
-// __attribute__((section("._RAM_D2_Area")))
-uint8_t enc_buf[ENC_TIME] = {0};
-uint16_t enc_index = 0;
-uint16_t enc_sum = 0;
 
 telemetry_t telem = {0};
 
@@ -761,10 +742,10 @@ static void update_encoder_and_voltage(uint16_t *adc2, uint16_t *adc3)
       #endif
     }
   }
-  enc_sum -= enc_buf[enc_index];
-  enc_buf[enc_index] = enc_err;
-  enc_sum += enc_buf[enc_index];
-  if (enc_sum > ENC_TIME/2)
+  prot.enc_sum -= prot.enc_buf[prot.enc_index];
+  prot.enc_buf[prot.enc_index] = enc_err;
+  prot.enc_sum += prot.enc_buf[prot.enc_index];
+  if (prot.enc_sum > ENC_TIME/2)
   {
     if (inverter_state == STATE_RUNNING)
     {
@@ -787,7 +768,7 @@ static void update_encoder_and_voltage(uint16_t *adc2, uint16_t *adc3)
 static void measure_currents_and_check_oc(uint16_t *adc1, float *phase_dc)
 {
   int8_t soft_oc_detected = 0;
-  soft_oc_sum -= soft_oc_buf[soft_oc_index];
+  prot.soft_oc_sum -= prot.soft_oc_buf[prot.soft_oc_index];
 
   for (int i = 0; i < 3; i++) {
       foc.current_phase[i] = (float)(adc1[i] - foc.current_offset[i]) * ACAPLSB;
@@ -801,16 +782,16 @@ static void measure_currents_and_check_oc(uint16_t *adc1, float *phase_dc)
       // foc.current_phase[i] = filtered_Iabc[i];
   }
 
-  soft_oc_buf[soft_oc_index] = soft_oc_detected;
-  soft_oc_sum += soft_oc_buf[soft_oc_index];
-  if (soft_oc_sum > SOFT_OC_TIME/2 && inverter_state == STATE_RUNNING)
+  prot.soft_oc_buf[prot.soft_oc_index] = soft_oc_detected;
+  prot.soft_oc_sum += prot.soft_oc_buf[prot.soft_oc_index];
+  if (prot.soft_oc_sum > SOFT_OC_TIME/2 && inverter_state == STATE_RUNNING)
   {
     Enter_ERROR_State(ERROR_INSTANT_OC);
   }
-  soft_oc_index++;
-  if (soft_oc_index == SOFT_OC_TIME)
+  prot.soft_oc_index++;
+  if (prot.soft_oc_index == SOFT_OC_TIME)
   {
-    soft_oc_index = 0;
+    prot.soft_oc_index = 0;
   }
 
   pid_controller_current_Ia.limit = motor.voltage_limit;
@@ -1014,7 +995,7 @@ static void fill_log_entry(uint16_t *adc2, float *current_phase_dc, float *Iabc_
   entry->LGRPM = (int16_t) roundf(foc.filtered_RPM);
   entry->LGID = (int16_t) roundf(foc.filtered_Id*100);
   entry->LGIQ = (int16_t) roundf(foc.filtered_Iq*10);
-  entry->LGZERO = (uint16_t) soft_oc_sum;
+  entry->LGZERO = (uint16_t) prot.soft_oc_sum;
   entry->LGDCIU = (int16_t) roundf(foc.target_Id*100);
   entry->LGDCIV = (int16_t) roundf(foc.target_Iq*100);
   entry->LGDCIW = (int16_t) roundf(current_phase_dc[2]*100);
@@ -1023,7 +1004,7 @@ static void fill_log_entry(uint16_t *adc2, float *current_phase_dc, float *Iabc_
   entry->LGVC = (int16_t) roundf(Iabc_controller_output[2]*10);
   entry->LGRMSIU = (uint16_t) __HAL_TIM_GET_COUNTER(&htim5)>>16;
   entry->LGRMSIV = (uint16_t) __HAL_TIM_GET_COUNTER(&htim5);
-  entry->LGRMSIW = (uint16_t) roundf(RMS_sum[2]/100);
+  entry->LGRMSIW = (uint16_t) roundf(prot.RMS_sum[2]/100);
   entry->LGLOGBUF = wr_log_index;
 
   log_subsec++;
@@ -1034,18 +1015,18 @@ static void check_hw_overcurrent()
 {
   if(inverter_state == STATE_RUNNING)
   {
-    oc_sum -= oc_buf[oc_index];
-    oc_buf[oc_index] = (HAL_GPIO_ReadPin(OC_Fault_GPIO_Port,OC_Fault_Pin) == GPIO_PIN_RESET) ? 1 : 0;
-    oc_sum += oc_buf[oc_index];
-    if (oc_sum > HW_OC_TIME/2)
+    prot.oc_sum -= prot.oc_buf[prot.oc_index];
+    prot.oc_buf[prot.oc_index] = (HAL_GPIO_ReadPin(OC_Fault_GPIO_Port,OC_Fault_Pin) == GPIO_PIN_RESET) ? 1 : 0;
+    prot.oc_sum += prot.oc_buf[prot.oc_index];
+    if (prot.oc_sum > HW_OC_TIME/2)
     {
       Enter_ERROR_State(ERROR_HW_OC);
     }
   }
-  oc_index++;
-  if (oc_index == HW_OC_TIME)
+  prot.oc_index++;
+  if (prot.oc_index == HW_OC_TIME)
   {
-    oc_index = 0;
+    prot.oc_index = 0;
   }
 }
 
@@ -1055,23 +1036,23 @@ static void check_rms_overcurrent()
   // Moving RMS for phase currents
   for (size_t i = 0; i < 3; i++)
   {
-    RMS_sum[i]-=(RMS_buf[i][indexRMS]*RMS_buf[i][indexRMS]);
+    prot.RMS_sum[i] -= (prot.RMS_buf[i][prot.indexRMS] * prot.RMS_buf[i][prot.indexRMS]);
   }
-  RMS_buf[0][indexRMS] = IU_100;
-  RMS_buf[1][indexRMS] = IV_100;
-  RMS_buf[2][indexRMS] = IW_100;
+  prot.RMS_buf[0][prot.indexRMS] = telem.IU_100;
+  prot.RMS_buf[1][prot.indexRMS] = telem.IV_100;
+  prot.RMS_buf[2][prot.indexRMS] = telem.IW_100;
   for (size_t i = 0; i < 3; i++)
   {
-    RMS_sum[i]+=(RMS_buf[i][indexRMS]*RMS_buf[i][indexRMS]);
+    prot.RMS_sum[i] += (prot.RMS_buf[i][prot.indexRMS] * prot.RMS_buf[i][prot.indexRMS]);
   }
-  indexRMS++;
-  if(indexRMS==10000)
+  prot.indexRMS++;
+  if (prot.indexRMS == 10000)
   {
-    indexRMS = 0;
+    prot.indexRMS = 0;
   }
   for (size_t i = 0; i < 3; i++)
   {
-    if(RMS_sum[i]/10000 > MOVRMSOCP)
+    if (prot.RMS_sum[i]/10000 > MOVRMSOCP)
     {
       Enter_ERROR_State(ERROR_RMS_OC);
     }
