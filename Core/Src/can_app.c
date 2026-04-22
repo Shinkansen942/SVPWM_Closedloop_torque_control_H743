@@ -29,15 +29,7 @@ extern float    Mot_Curr;
 extern uint32_t indexMusic;
 
 // --- OC / Encoder fault buffers (from main.c) ---
-extern uint8_t  oc_buf[];
-extern uint16_t oc_index;
-extern uint16_t oc_sum;
-extern uint8_t  soft_oc_buf[];
-extern uint16_t soft_oc_index;
-extern uint16_t soft_oc_sum;
-extern uint8_t  enc_buf[];
-extern uint16_t enc_index;
-extern uint16_t enc_sum;
+extern protection_t prot;
 
 // --- Low-pass filters (from main.c) ---
 extern lpf_t filter_Idfw;
@@ -383,23 +375,23 @@ GPIO_PIN_SET )
             foc.enable_hw_oc = 1;
             for (size_t i = 0; i < HW_OC_TIME; i++)
             {
-              oc_buf[i] = 0;
+              prot.oc_buf[i] = 0;
             }
-            oc_sum = 0;
-            oc_index = 0;
+            prot.oc_sum = 0;
+            prot.oc_index = 0;
 
-            soft_oc_sum = 0;
-            soft_oc_index = 0;
+            prot.soft_oc_sum = 0;
+            prot.soft_oc_index = 0;
             for (size_t i = 0; i < SOFT_OC_TIME; i++)
             {
-              soft_oc_buf[i] = 0;
+              prot.soft_oc_buf[i] = 0;
             }
 
-            enc_sum = 0;
-            enc_index = 0;
+            prot.enc_sum = 0;
+            prot.enc_index = 0;
             for (size_t i = 0; i < ENC_TIME; i++)
             {
-              enc_buf[i] = 0;
+              prot.enc_buf[i] = 0;
             }
             #ifdef FW_STARTUP_ID_FIX
             if (fabsf(foc.filtered_RPM) > 6000.0f)
