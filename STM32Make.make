@@ -86,6 +86,7 @@ Core/Src/crc.c \
 Core/Src/current_sense.c \
 Core/Src/dma.c \
 Core/Src/fdcan.c \
+Core/Src/foc_loop.c \
 Core/Src/foc_utils.c \
 Core/Src/gpio.c \
 Core/Src/hw_callbacks.c \
