@@ -55,11 +55,6 @@ extern uint16_t DMA_ADC1_arr[4];
 extern uint16_t DMA_ADC2_arr[4];
 extern uint16_t DMA_ADC3_arr[6];
 
-/* --- Constants --- */
-extern const float ACAPLSB;
-extern const float DCVPLSB;
-extern const float DCAPLSB;
-
 /* --- Logging (shared with main.c while-loop) --- */
 extern logger_t  log_buf[2][3600];
 extern uint8_t   wr_log_buf_num;
