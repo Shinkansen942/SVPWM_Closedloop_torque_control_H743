@@ -47,7 +47,10 @@ void MX_ADC2_Init(void);
 void MX_ADC3_Init(void);
 
 /* USER CODE BEGIN Prototypes */
-
+// ADC DMA Buffer Declarations
+__attribute__((section("._ADC1_Area"))) uint16_t DMA_ADC1_arr[4];
+__attribute__((section("._ADC2_Area"))) uint16_t DMA_ADC2_arr[4];
+__attribute__((section("._ADC3_Area"))) uint16_t DMA_ADC3_arr[6];
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

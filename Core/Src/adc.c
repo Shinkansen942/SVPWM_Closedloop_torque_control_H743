@@ -21,7 +21,9 @@
 #include "adc.h"
 
 /* USER CODE BEGIN 0 */
-
+__attribute__((section("._ADC1_Area"))) uint16_t DMA_ADC1_arr[4] = {0};
+__attribute__((section("._ADC2_Area"))) uint16_t DMA_ADC2_arr[4] = {0};
+__attribute__((section("._ADC3_Area"))) uint16_t DMA_ADC3_arr[6] = {0};
 /* USER CODE END 0 */
 
 ADC_HandleTypeDef hadc1;
