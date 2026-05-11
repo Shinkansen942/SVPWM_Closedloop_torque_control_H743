@@ -17,7 +17,6 @@
 #include "FOC.h"               // field_weaking_control, MTPA_control, field_weaking_angle_control
 #include "pid.h"               // pidc_t, PID_operator, PID_reset, PID_integral_reset
 #include "lowpass_filter.h"    // lpf_t, LowPassFilter_operator
-#include "current_sense.h"     // calibrateOffsets (used in main, not here — but harmless)
 #include "state_machine.h"     // inverter_state, error_state, Enter_ERROR_State, Enter_READY_State
 #include "can_app.h"           // CAN_Send_*, CAN_Timer
 #include "logger.h"            // logger_t
@@ -26,53 +25,25 @@
 
 
 /* ================================================================
- *  Extern declarations — variables defined in main.c
+ *  Forward declarations for static functions
  * ================================================================ */
-
-/* --- Struct instances --- */
-extern motor_params_t   motor;
-extern foc_state_t      foc;
-extern protection_t     prot;
-extern telemetry_t      telem;
-
-/* --- PID controller instances --- */
-extern pidc_t pid_controller_current_Iq;
-extern pidc_t pid_controller_current_Id;
-extern pidc_t pid_controller_current_OCP;
-extern pidc_t pid_controller_current_Ia;
-extern pidc_t pid_controller_current_Iabc[3];
-
-/* --- Low-pass filter instances --- */
-extern lpf_t filter_current_Iq;
-extern lpf_t filter_current_Id;
-extern lpf_t filter_current_Iabc[3];
-extern lpf_t filter_current_DC_Iabc[3];
-extern lpf_t filter_RPM;
-extern lpf_t filter_Idfw;
-
-/* --- DMA ADC buffers (special memory sections) --- */
-extern uint16_t DMA_ADC1_arr[4];
-extern uint16_t DMA_ADC2_arr[4];
-extern uint16_t DMA_ADC3_arr[6];
-
-/* --- Logging (shared with main.c while-loop) --- */
-extern logger_t  log_buf[2][3600];
-extern uint8_t   wr_log_buf_num;
-extern uint16_t  wr_log_index;
-extern RTC_DateTypeDef  log_date;
-extern RTC_TimeTypeDef  log_time;
-extern uint8_t   last_sec;
-extern uint16_t  log_subsec;
-
-/* --- TIMING debug (shared with main.c while-loop) --- */
+static void read_adc_buffers(uint16_t *adc1, uint16_t *adc2, uint16_t *adc3);
+static void handle_state_and_ramp(void);
+static void update_encoder_and_voltage(uint16_t *adc2, uint16_t *adc3);
+static void measure_currents_and_check_oc(uint16_t *adc1, float *phase_dc);
+static void foc_control_step(float *phase_dc, float *Iabc_controller_output);
+static void update_leds(void);
+static void periodic_can_report(uint16_t *adc1, uint16_t *adc3);
+static void fill_log_entry(uint16_t *adc2, float *current_phase_dc, float *Iabc_controller_output);
+static void check_hw_overcurrent(void);
+#ifdef RMSOCP
+static void check_rms_overcurrent(void);
+#endif
+#ifdef CAN_OT_FAULT
+static void check_can_timeout(void);
+#endif
 #ifdef TIMING
-extern int       max_time;
-extern int       min_time;
-extern int       prev_time;
-extern int       max_btw;
-extern int       max_sdwrite;
-extern uint32_t  loop_time;
-extern int       indexTimer;
+static void update_timing_stats(uint32_t tick_start);
 #endif
 
 /* ================================================================
@@ -82,6 +53,76 @@ static int indexLED = 0;
 static int indexHeartbeat = 0;
 static int indexStatus = 0;
 
+/* ================================================================
+ *  HAL Timer Callback - Main FOC Control Loop ISR
+ *  This is the most critical function - called at FOC frequency
+ * ================================================================ */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  // Check which version of the timer triggered this callback and toggle LED
+  if (htim != &htim1) return;
+
+  if (!foc.run)
+  {
+    foc.run = 1;
+    return;
+  }
+  foc.run = 0;
+
+  HAL_GPIO_TogglePin(LED_TIM_GPIO_Port, LED_TIM_Pin);
+
+  // ADC
+  uint16_t ADC1_arr[4] = {0};
+  uint16_t ADC2_arr[4] = {0};
+  uint16_t ADC3_arr[6] = {0};
+  read_adc_buffers(ADC1_arr, ADC2_arr, ADC3_arr);
+
+  handle_state_and_ramp();
+
+  #ifdef TIMING
+  uint32_t tick_start = __HAL_TIM_GET_COUNTER(&htim5);
+  #endif
+
+  indexLED++;
+  indexHeartbeat++;
+  indexStatus++;
+  CAN_Timer++;
+
+  update_encoder_and_voltage(ADC2_arr, ADC3_arr);
+
+  float current_phase_dc[3] = {0.0f};
+  measure_currents_and_check_oc(ADC1_arr, current_phase_dc);
+
+  float Iabc_controller_output[3] = {0.0f};
+  foc_control_step(current_phase_dc, Iabc_controller_output);
+
+  update_leds();
+
+  periodic_can_report(ADC1_arr, ADC3_arr);
+
+  // Logging
+  fill_log_entry(ADC2_arr, current_phase_dc, Iabc_controller_output);
+
+  check_hw_overcurrent();
+
+  #ifdef RMSOCP
+  check_rms_overcurrent();
+  #endif
+
+  #ifdef CAN_OT_FAULT
+  check_can_timeout();
+  #endif
+
+  #ifdef TIMING
+  update_timing_stats(tick_start);
+  #endif
+
+  HAL_GPIO_TogglePin(LED_TIM_GPIO_Port,LED_TIM_Pin);
+}
+
+/* ================================================================
+ *  Helper Functions
+ * ================================================================ */
 
 // Read ADC values from DMA buffers
 static void read_adc_buffers(uint16_t *adc1, uint16_t *adc2, uint16_t *adc3)
@@ -537,66 +578,3 @@ static void update_timing_stats(uint32_t tick_start)
   indexTimer++;
 }
 #endif
-
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
-{
-  // Check which version of the timer triggered this callback and toggle LED
-  if (htim != &htim1) return;
-
-  if (!foc.run)
-  {
-    foc.run = 1;
-    return;
-  }
-  foc.run = 0;
-
-  HAL_GPIO_TogglePin(LED_TIM_GPIO_Port, LED_TIM_Pin);
-
-  // ADC
-  uint16_t ADC1_arr[4] = {0};
-  uint16_t ADC2_arr[4] = {0};
-  uint16_t ADC3_arr[6] = {0};
-  read_adc_buffers(ADC1_arr, ADC2_arr, ADC3_arr);
-
-  handle_state_and_ramp();
-
-  #ifdef TIMING
-  uint32_t tick_start = __HAL_TIM_GET_COUNTER(&htim5);
-  #endif
-
-  indexLED++;
-  indexHeartbeat++;
-  indexStatus++;
-  CAN_Timer++;
-
-  update_encoder_and_voltage(ADC2_arr, ADC3_arr);
-
-  float current_phase_dc[3] = {0.0f};
-  measure_currents_and_check_oc(ADC1_arr, current_phase_dc);
-
-  float Iabc_controller_output[3] = {0.0f};
-  foc_control_step(current_phase_dc, Iabc_controller_output);
-
-  update_leds();
-
-  periodic_can_report(ADC1_arr, ADC3_arr);
-
-  // Logging
-  fill_log_entry(ADC2_arr, current_phase_dc, Iabc_controller_output);
-
-  check_hw_overcurrent();
-
-  #ifdef RMSOCP
-  check_rms_overcurrent();
-  #endif
-
-  #ifdef CAN_OT_FAULT
-  check_can_timeout();
-  #endif
-
-  #ifdef TIMING
-  update_timing_stats(tick_start);
-  #endif
-
-  HAL_GPIO_TogglePin(LED_TIM_GPIO_Port,LED_TIM_Pin);
-}

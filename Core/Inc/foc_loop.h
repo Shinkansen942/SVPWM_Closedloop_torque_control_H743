@@ -10,6 +10,8 @@
 
 #include <stdint.h>
 #include "config.h"
+#include "pid.h"               // for pidc_t
+#include "lowpass_filter.h"    // for lpf_t
 
 /* ================================================================
  *  Struct 1 — motor_params_t  (motor physical & system parameters)
@@ -137,5 +139,46 @@ typedef struct {
     int16_t IV_100;
     int16_t IW_100;
 } telemetry_t;
+
+/* ================================================================
+ *  Extern declarations - variables defined in main.c
+ * ================================================================ */
+
+/* --- Struct instances --- */
+extern motor_params_t   motor;
+extern foc_state_t      foc;
+extern protection_t     prot;
+extern telemetry_t      telem;
+
+/* --- PID controller instances --- */
+extern pidc_t pid_controller_current_Iq;
+extern pidc_t pid_controller_current_Id;
+extern pidc_t pid_controller_current_OCP;
+extern pidc_t pid_controller_current_Ia;
+extern pidc_t pid_controller_current_Iabc[3];
+
+/* --- Low-pass filter instances --- */
+extern lpf_t filter_current_Iq;
+extern lpf_t filter_current_Id;
+extern lpf_t filter_current_Iabc[3];
+extern lpf_t filter_current_DC_Iabc[3];
+extern lpf_t filter_RPM;
+extern lpf_t filter_Idfw;
+
+/* --- DMA ADC buffers (special memory sections) --- */
+extern uint16_t DMA_ADC1_arr[4];
+extern uint16_t DMA_ADC2_arr[4];
+extern uint16_t DMA_ADC3_arr[6];
+
+/* --- TIMING debug (shared with main.c while-loop) --- */
+#ifdef TIMING
+extern int       max_time;
+extern int       min_time;
+extern int       prev_time;
+extern int       max_btw;
+extern int       max_sdwrite;
+extern uint32_t  loop_time;
+extern int       indexTimer;
+#endif
 
 #endif /* INC_FOC_LOOP_H_ */
