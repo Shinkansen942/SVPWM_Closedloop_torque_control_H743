@@ -13,13 +13,12 @@
 #include "main.h"
 #include "state_machine.h"
 #include "fatfs.h"
+#include "logger.h"
 
 /* ================================================================
  *  Extern declarations
  * ================================================================ */
-
-extern FIL  MyFile;       // SD card file handle (from main.c)
-extern int  isSent;       // UART TX busy flag (from main.c)
+extern int  isSent;       // UART TX busy flag
 
 /* ================================================================
  *  GPIO EXTI Callback

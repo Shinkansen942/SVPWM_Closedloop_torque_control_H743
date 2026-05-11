@@ -88,28 +88,6 @@ __attribute__((section("._RAM_Area"))) static char tdata[500];
 extern int CAN_Timer;
 volatile int isSent = 1;
 
-// SD card
-__attribute__((section("._RAM_Area"))) FATFS SDFatFS_RAM;  /* File system object for SD card logical drive */
-__attribute__((section("._RAM_Area"))) FIL MyFile;     /* File object */
-const char TestFPath[] = {TEST_FILE_PATH};
-char TextFPath[80];
-
-// Logging Buffers
-__attribute__((section("._RAM_Area"))) logger_t log_buf[2][3600];
-// __attribute__((section("._RAM_Area"))) logger_t log_test[2][2];
-uint8_t wr_log_buf_num = 0;
-uint16_t wr_log_index = 0;
-RTC_DateTypeDef log_date;
-RTC_TimeTypeDef log_time;
-uint8_t last_sec = 0;
-uint16_t log_subsec = 0;
-uint32_t indexMusicTs = 0;
-uint32_t prev_new_file = 0;
-int prev_sd = 0;
-uint8_t got_date = 0;
-uint8_t last_got_date = 0;
-int max_sd_buf = 0;
-
 // Motor Control & FOC variables
 #ifdef OPEN_LOOP_SPEED
 float open_loop_rpm_var = OPEN_LOOP_RPM;
@@ -206,8 +184,6 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
   code_ver = CODE_VER;
-  volatile FRESULT res;                                 /* FatFs function common result code */
-	uint32_t byteswritten;                     /* File write/read counts */
 	// uint8_t wtext[] = "This is STM32 working with FatFs\n"; /* File write buffer */
   pid_controller_current_Ia.limit = motor.voltage_limit;
   pid_controller_current_Id.limit = motor.voltage_limit;
@@ -305,41 +281,8 @@ int main(void)
   HAL_TIM_Base_Start(&htim5);
   HAL_TIM_Base_Start(&htim2);
 
-  //Init SD files
-  BSP_SD_Init();
-  HAL_SD_InitCard(&hsd1);
-
-  volatile int sdcard_status = HAL_SD_GetCardState(&hsd1);
-  if(sdcard_status == HAL_SD_CARD_TRANSFER)
-  {
-    res = f_mount(&SDFatFS_RAM,(TCHAR const*)SDPath,1);
-    // res = f_mount(&SDFatFS,"0",0);
-    if (res != FR_OK)
-    {
-      Error_Handler();
-    }
-    else
-    {
-      #ifdef SDDEBUG
-      res = f_open(&MyFile,TestFPath,FA_CREATE_ALWAYS | FA_WRITE);
-      if (res != FR_OK)
-      {
-        Error_Handler();
-      }
-      else
-      {
-        set_one(log_test);
-        f_write(&MyFile,&log_test,sizeof(log_test),(void *)&byteswritten);
-        res = f_close(&MyFile);
-        if(res!=FR_OK)
-        {
-          Error_Handler();
-        }
-      }
-      #endif
-    }
-  }
-
+  // Init SD files
+  sd_logger_init();
 
   // Init ADC DMA
   HAL_ADC_Start_DMA(&hadc1,(uint32_t*)DMA_ADC1_arr,4);
@@ -403,18 +346,7 @@ int main(void)
   //   HAL_Delay(10);
   // }
 
-  //Get DateTime
-  HAL_RTC_GetDate(&hrtc,&log_date,RTC_FORMAT_BIN);
-  HAL_RTC_GetTime(&hrtc,&log_time,RTC_FORMAT_BIN);
-
-  snprintf(TextFPath, sizeof(TextFPath),FILENAME,(int)log_date.Year+2000,(int)log_date.Month,(int)log_date.Date,(int)log_time.Hours,(int)log_time.Minutes,(int)log_time.Seconds);
-  // snprintf(TextFPath, sizeof(TextFPath),"text.bin");
-  res = f_open(&MyFile,TextFPath,FA_CREATE_ALWAYS|FA_WRITE);
-  if(res == FR_OK)
-  {
-    f_close(&MyFile);
-  }
-  f_open(&MyFile,TextFPath,FA_OPEN_APPEND|FA_WRITE);
+  sd_logger_open_file();
 
   HAL_GPIO_WritePin(LED_ERR_GPIO_Port,LED_ERR_Pin,GPIO_PIN_RESET);
   inverter_state = STATE_READY;
@@ -428,8 +360,6 @@ int main(void)
   HAL_GPIO_WritePin(LED_SD_GPIO_Port,LED_SD_Pin,GPIO_PIN_SET);
   HAL_TIM_Base_Start_IT(&htim1);
   HAL_TIM_Base_Start_IT(&htim3);
-  prev_sd = __HAL_TIM_GET_COUNTER(&htim2);
-  prev_new_file = __HAL_TIM_GET_COUNTER(&htim2);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -441,92 +371,7 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
     // continue;
-    volatile int sd_now = __HAL_TIM_GET_COUNTER(&htim2);
-    // uint32_t whileTest = sd_now;
-    if (sd_now - prev_new_file >= 3000000)
-    {
-      f_close(&MyFile);
-      snprintf(TextFPath, sizeof(TextFPath),FILENAME,(int)log_date.Year+2000,(int)log_date.Month,(int)log_date.Date,(int)log_time.Hours,(int)log_time.Minutes,(int)log_time.Seconds);
-      // snprintf(TextFPath, sizeof(TextFPath),"text.bin");
-      res = f_open(&MyFile,TextFPath,FA_CREATE_ALWAYS|FA_WRITE);
-      if(res == FR_OK)
-      {
-        f_close(&MyFile);
-      }
-      f_open(&MyFile,TextFPath,FA_OPEN_APPEND|FA_WRITE);
-      prev_new_file = sd_now;
-    }    
-    if (sd_now - prev_sd >= 1000)
-    {
-      HAL_GPIO_WritePin(LED_SD_GPIO_Port,LED_SD_Pin,GPIO_PIN_SET);
-
-      if(last_got_date != got_date)
-      {
-        f_close(&MyFile);
-        snprintf(TextFPath, sizeof(TextFPath),FILENAME,(int)log_date.Year+2000,(int)log_date.Month,(int)log_date.Date,(int)log_time.Hours,(int)log_time.Minutes,(int)log_time.Seconds);
-        // snprintf(TextFPath, sizeof(TextFPath),"text.bin");
-        res = f_open(&MyFile,TextFPath,FA_CREATE_ALWAYS|FA_WRITE);
-        if(res == FR_OK)
-        {
-          f_close(&MyFile);
-        }
-        f_open(&MyFile,TextFPath,FA_OPEN_APPEND|FA_WRITE);
-      }
-            
-      
-      __disable_irq();
-      uint8_t buf_num_to_sd = wr_log_buf_num;
-      uint16_t index_to_sd = wr_log_index;
-      wr_log_buf_num^=0x1;
-      wr_log_index = 0;
-      __enable_irq();
-
-      if(max_sd_buf<index_to_sd)
-      {
-        max_sd_buf = index_to_sd;
-      }
-
-      res = f_write(&MyFile,log_buf[buf_num_to_sd],index_to_sd*sizeof(logger_t),(void *)&byteswritten);
-      while (res != FR_OK)
-      {
-        if (res == FR_DISK_ERR)
-        {
-          f_open(&MyFile,TextFPath,FA_OPEN_APPEND|FA_WRITE);
-        }
-        else
-        {
-          break;
-        }
-        res = f_write(&MyFile,log_buf[buf_num_to_sd],index_to_sd*sizeof(logger_t),(void *)&byteswritten);
-        if (res == FR_OK)
-        {
-          break;
-        }
-      }
-      f_sync(&MyFile);
-
-      last_got_date = got_date;
-
-      #ifdef TIMING
-      sd_td = __HAL_TIM_GET_COUNTER(&htim2) - sd_now;
-      if (max_sdwrite < sd_td)
-      {
-        max_sdwrite = sd_td;
-      }      
-      #endif
-      prev_sd = sd_now;
-      
-
-      HAL_GPIO_WritePin(LED_SD_GPIO_Port,LED_SD_Pin,GPIO_PIN_RESET);
-    }
-    if (sd_now - prev_sd < 0)
-    {
-      prev_sd = sd_now;
-    }
-    if (sd_now - prev_new_file >= 3000000)
-    {
-      prev_new_file = sd_now;
-    }
+    sd_logger_run();      // double-buffer write + file rotation
   }
   /* USER CODE END 3 */
 }
