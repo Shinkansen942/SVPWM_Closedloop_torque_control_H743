@@ -183,6 +183,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
+  // --- Version & PID limits ---
   code_ver = CODE_VER;
 	// uint8_t wtext[] = "This is STM32 working with FatFs\n"; /* File write buffer */
   pid_controller_current_Ia.limit = motor.voltage_limit;
@@ -191,6 +192,8 @@ int main(void)
   pid_controller_current_OCP.limit = motor.voltage_limit;
   // uint8_t wlooptext[] = "This is STM32 working with FatFs in main loop\n"; /* File write buffer */
   // log_buf[0][0].LGSTATE = 0;
+
+  // --- Build temperature lookup tables (Mot_Conv, Inv_Conv) ---
   for (size_t i = 0; i < 1024; i++)
   {
     float voltage = (float)(3300*i/1024);
@@ -252,47 +255,49 @@ int main(void)
   MX_TIM3_Init();
   MX_CRC_Init();
   /* USER CODE BEGIN 2 */
-  HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_RESET);
-  HAL_GPIO_WritePin(LED_ERR_GPIO_Port,LED_ERR_Pin,GPIO_PIN_SET);
-  // HAL_GPIO_WritePin(LED_D12_GPIO_Port,LED_D12_Pin,GPIO_PIN_SET);
-  HAL_GPIO_WritePin(LED_SD_GPIO_Port,LED_SD_Pin,GPIO_PIN_RESET);
-  HAL_GPIO_WritePin(LED_RUN_GPIO_Port,LED_RUN_Pin,GPIO_PIN_RESET);
-  HAL_GPIO_WritePin(LED_TIM_GPIO_Port,LED_TIM_Pin,GPIO_PIN_RESET);
 
-  //Get temperature sensor calibration data
+  // --- LED & motor driver init ---
+  HAL_GPIO_WritePin(Motor_Enable_GPIO_Port, Motor_Enable_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(LED_ERR_GPIO_Port, LED_ERR_Pin, GPIO_PIN_SET);
+  // HAL_GPIO_WritePin(LED_D12_GPIO_Port,LED_D12_Pin,GPIO_PIN_SET);
+  HAL_GPIO_WritePin(LED_SD_GPIO_Port, LED_SD_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(LED_RUN_GPIO_Port, LED_RUN_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(LED_TIM_GPIO_Port, LED_TIM_Pin, GPIO_PIN_RESET);
+
+  // --- MCU temperature calibration (read factory cal + build MCU_Conv table) ---
   /* 0x1FF1E820 Calibration ADC value at 30 °C = 0x2fc0, 12224 */
   ts_cal1 = (float) *(uint16_t*) (TEMPSENSOR_CAL1_ADDR);
   /* 0x1FF1E840 Calibration ADC value at 110 °C = 0x3cb4, 15540 */
   ts_cal2 = (float) *(uint16_t*) (TEMPSENSOR_CAL2_ADDR);
-
-  //Generate MCU conversion table
   for (size_t i = 0; i < 1024; i++)
   {
     MCU_Conv[i] = (int16_t) roundf(MCU_TemperatureCalculate(i<<6)*10);
   }
 
-  // Calibrate ADC
+  // --- ADC calibration ---
   HAL_Delay(100);
-  HAL_ADCEx_Calibration_Start(&hadc1,ADC_CALIB_OFFSET_LINEARITY,ADC_SINGLE_ENDED);
-  HAL_ADCEx_Calibration_Start(&hadc2,ADC_CALIB_OFFSET_LINEARITY,ADC_SINGLE_ENDED);
-  HAL_ADCEx_Calibration_Start(&hadc3,ADC_CALIB_OFFSET_LINEARITY,ADC_SINGLE_ENDED);
+  HAL_ADCEx_Calibration_Start(&hadc1, ADC_CALIB_OFFSET_LINEARITY, ADC_SINGLE_ENDED);
+  HAL_ADCEx_Calibration_Start(&hadc2, ADC_CALIB_OFFSET_LINEARITY, ADC_SINGLE_ENDED);
+  HAL_ADCEx_Calibration_Start(&hadc3, ADC_CALIB_OFFSET_LINEARITY, ADC_SINGLE_ENDED);
   HAL_Delay(100);
 
+  // --- Start utility timers (htim5: ISR timing, htim2: SD write interval) ---
   HAL_TIM_Base_Start(&htim5);
   HAL_TIM_Base_Start(&htim2);
 
-  // Init SD files
+  // --- SD card mount ---
   sd_logger_init();
 
-  // Init ADC DMA
-  HAL_ADC_Start_DMA(&hadc1,(uint32_t*)DMA_ADC1_arr,4);
-  HAL_ADC_Start_DMA(&hadc2,(uint32_t*)DMA_ADC2_arr,4);
-  HAL_ADC_Start_DMA(&hadc3,(uint32_t*)DMA_ADC3_arr,6);
+  // --- ADC DMA start ---
+  HAL_ADC_Start_DMA(&hadc1, (uint32_t*)DMA_ADC1_arr, 4);
+  HAL_ADC_Start_DMA(&hadc2, (uint32_t*)DMA_ADC2_arr, 4);
+  HAL_ADC_Start_DMA(&hadc3, (uint32_t*)DMA_ADC3_arr, 6);
   // HAL_MDMA_Start_IT(&hmdma_mdma_channel0_dma1_stream2_tc_0,(uint32_t)tmp_DMA_ADC1_arr,(uint32_t)DMA_ADC1_arr,8,1);
   // HAL_MDMA_Start_IT(&hmdma_mdma_channel1_dma1_stream1_tc_0,(uint32_t)tmp_DMA_ADC2_arr,(uint32_t)DMA_ADC2_arr,8,1);
   // HAL_MDMA_Start_IT(&hmdma_mdma_channel2_dma1_stream4_tc_0,(uint32_t)tmp_DMA_ADC3_arr,(uint32_t)DMA_ADC3_arr,12,1);
   // HAL_ADC_Start_IT(&hadc3);
 
+  // --- PWM start + current offset calibration ---
   // HAL_GPIO_WritePin(Motor_Enable_GPIO_Port, Motor_Enable_Pin, GPIO_PIN_SET);
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
@@ -304,7 +309,7 @@ int main(void)
   calibrateOffsets(foc.current_offset, DMA_ADC1_arr);
   // HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_RESET);
 
-  //Wait for GATE READY Signal
+  // --- Wait for gate driver ready (optional) ---
   #ifdef WAIT_GATE_READY
   while (HAL_GPIO_ReadPin(GATE_Ready_GPIO_Port,GATE_Ready_Pin) != GPIO_PIN_SET)
   {
@@ -312,6 +317,7 @@ int main(void)
   }
   #endif
 
+  // --- Zero electrical angle calibration (optional) ---
   #ifdef CAL_ZERO_ANGLE
   float angle_integrate = 0.0f;
   HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_SET);
@@ -337,8 +343,8 @@ int main(void)
   HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_RESET);
   #endif
 
-  UART_TX_Send(&huart1,"zero_electric_angle: %i \n",(int) floor(motor.zero_electric_angle/M_PI*180));
-
+  // --- CAN bus init ---
+  UART_TX_Send(&huart1, "zero_electric_angle: %i \n", (int) floor(motor.zero_electric_angle/M_PI*180));
   Config_Fdcan1();
 
   // while (!got_date)
@@ -346,9 +352,11 @@ int main(void)
   //   HAL_Delay(10);
   // }
 
+  // --- Open SD log file ---
   sd_logger_open_file();
 
-  HAL_GPIO_WritePin(LED_ERR_GPIO_Port,LED_ERR_Pin,GPIO_PIN_RESET);
+  // --- Enter READY state, start FOC & protection timer ISR ---
+  HAL_GPIO_WritePin(LED_ERR_GPIO_Port, LED_ERR_Pin, GPIO_PIN_RESET);
   inverter_state = STATE_READY;
   error_state = ERROR_NONE;
   // INV_Statustypedef last_state = inverter_state;
@@ -358,8 +366,8 @@ int main(void)
   #endif
 
   HAL_GPIO_WritePin(LED_SD_GPIO_Port,LED_SD_Pin,GPIO_PIN_SET);
-  HAL_TIM_Base_Start_IT(&htim1);
-  HAL_TIM_Base_Start_IT(&htim3);
+  HAL_TIM_Base_Start_IT(&htim1);  // FOC control loop ISR
+  HAL_TIM_Base_Start_IT(&htim3);  // protection timer
   /* USER CODE END 2 */
 
   /* Infinite loop */
