@@ -105,7 +105,6 @@ Core/Src/lowpass_filter.c \
 Core/Src/motor_control.c \
 Core/Src/pid.c \
 Core/Src/sincos_encoder.c \
-Core/Src/state_machine.c \
 Core/Src/PLL/PLL.c \
 Core/Src/PLL/PLL_data.c \
 Core/Src/PLL/rt_nonfinite.c

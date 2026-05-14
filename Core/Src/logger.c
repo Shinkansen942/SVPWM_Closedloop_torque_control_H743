@@ -61,7 +61,6 @@ void set_one(logger_t log_struct[2][2])
 void sd_logger_init(void)
 {
     volatile FRESULT res;                      /* FatFs function common result code */
-    uint32_t byteswritten;                     /* File write/read counts */
 
     BSP_SD_Init();
     HAL_SD_InitCard(&hsd1);
@@ -78,6 +77,7 @@ void sd_logger_init(void)
         else
         {
             #ifdef SDDEBUG
+            uint32_t byteswritten;             /* File write/read counts */
             res = f_open(&MyFile,TestFPath,FA_CREATE_ALWAYS | FA_WRITE);
             if (res != FR_OK)
             {
@@ -90,7 +90,7 @@ void sd_logger_init(void)
                 res = f_close(&MyFile);
                 if (res != FR_OK)
                 {
-                Error_Handler();
+                    Error_Handler();
                 }
             }
             #endif

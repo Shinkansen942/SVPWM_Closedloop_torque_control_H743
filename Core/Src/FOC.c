@@ -29,7 +29,7 @@ float field_weaking_control(float rpm, float Iq, float Vd, float Vdc)
     if ( idfw_numerator < 0.0f)
     {
         Idfw = 1.414*idfw_numerator / (omega_e * motor.Ld);
-        _constrain(Idfw, -MAX_FLUX_ID, -MINIMUM_FW_ID);
+        Idfw = _constrain(Idfw, -MAX_FLUX_ID, -MINIMUM_FW_ID);
 
     }
     Idfw = LowPassFilter_operator(Idfw,&filter_Idfw);
