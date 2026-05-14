@@ -48,7 +48,6 @@
 // #include "stm32h7xx_hal_tim_ex.h"
 #include "time.h"
 #include "can_app.h"
-#include "state_machine.h"
 #include "foc_loop.h"
 /* USER CODE END Includes */
 

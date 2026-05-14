@@ -11,7 +11,7 @@
  */
 
 #include "main.h"
-#include "state_machine.h"
+#include "inverter_state.h"
 #include "fatfs.h"
 #include "logger.h"
 

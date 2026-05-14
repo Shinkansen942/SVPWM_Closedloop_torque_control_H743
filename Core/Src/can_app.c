@@ -10,7 +10,7 @@
 #include "pid.h"
 #include "lowpass_filter.h"
 #include "rtc.h"
-#include "state_machine.h"
+#include "inverter_state.h"
 #include <string.h>
 #include <math.h>
 #include "time.h"
@@ -26,7 +26,7 @@ extern motor_params_t motor;
 // --- Motor / FOC control (from main.c) ---
 extern foc_state_t foc;
 extern float    Mot_Curr;
-extern uint32_t indexMusic;
+uint32_t indexMusic = 0;
 
 // --- OC / Encoder fault buffers (from main.c) ---
 extern protection_t prot;

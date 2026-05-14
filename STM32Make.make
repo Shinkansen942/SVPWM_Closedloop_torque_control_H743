@@ -101,7 +101,6 @@ Core/Src/pid.c \
 Core/Src/rtc.c \
 Core/Src/sdmmc.c \
 Core/Src/sincos_encoder.c \
-Core/Src/state_machine.c \
 Core/Src/stm32h7xx_hal_msp.c \
 Core/Src/stm32h7xx_it.c \
 Core/Src/syscalls.c \

@@ -17,7 +17,7 @@
 #include "FOC.h"               // field_weaking_control, MTPA_control, field_weaking_angle_control
 #include "pid.h"               // pidc_t, PID_operator, PID_reset, PID_integral_reset
 #include "lowpass_filter.h"    // lpf_t, LowPassFilter_operator
-#include "state_machine.h"     // inverter_state, error_state, Enter_ERROR_State, Enter_READY_State
+#include "inverter_state.h"     // inverter_state, error_state, Enter_ERROR_State, Enter_READY_State
 #include "can_app.h"           // CAN_Send_*, CAN_Timer
 #include "logger.h"            // logger_t
 #include "tim.h"               // htim1, htim5
