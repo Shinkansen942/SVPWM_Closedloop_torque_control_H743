@@ -30,9 +30,9 @@
  *  MOTOR SELECTION - Choose Motor Type
  * ================================================================ */
 // #define MOT_FL
-#define MOT_RR
+// #define MOT_RR
 // #define MOT_RL
-// #define MOT_CAL
+#define MOT_CAL
 
 /* ================================================================
  *  PROTECTION - Safety Thresholds
@@ -157,8 +157,8 @@
 #define FILENAME "MOT_CAL_%04d%02d%02d_%02d%02d%02d_NEW_V2_4.bin"
 #else
 #ifdef MOT_CAL
-#define ZERO_ELECTRIC_ANGLE 5.75f //should be in radians
-#define MOT_CURR 1.084f
+#define ZERO_ELECTRIC_ANGLE 3.25f //5.75f //should be in radians
+#define MOT_CURR 0.959f //1.084f
 #define FILENAME "MOT_CAL_%04d%02d%02d_%02d%02d%02d_NEW_V2_4.bin"
 #endif
 #ifdef MOT_FL
@@ -188,8 +188,8 @@
 /* ================================================================
  *  ADC Conversion Constants (Hardware-specific)
  * ================================================================ */
-#define ACAPLSB -0.1031436f   // ACAPLSB = 3.3/15.626e-3/adc1_range
-#define DCVPLSB 0.00897f       // DCVPLSB = 451*3.3/adc3_range
+#define ACAPLSB -0.05148007812f //-0.1031436f   // ACAPLSB = 3.3/15.626e-3/adc1_range
+#define DCVPLSB 2.21972f //0.00897f       // DCVPLSB = 451*3.3/adc3_range
 #define DCAPLSB 0.0402930f     // DCAPLSB = 3.3/20e-3/adc1_range
 
 /* ================================================================
