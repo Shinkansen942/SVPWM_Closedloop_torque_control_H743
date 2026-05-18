@@ -5,6 +5,9 @@
 #ifdef MOT_CAL
 #define MOT_ID 0
 #endif
+#ifdef MOT_TEST
+#define MOT_ID 0
+#endif
 #ifdef MOT_FL
 #define MOT_ID 1
 #endif

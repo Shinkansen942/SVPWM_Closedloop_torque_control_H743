@@ -1,4 +1,4 @@
-#ifndef __CONFIG_H__
+// #ifndef __CONFIG_H__
 #define __CONFIG_H__
 
 // Code Config Options
@@ -26,9 +26,10 @@
 
 // Motor number
 // #define MOT_FL
-#define MOT_RR 
+// #define MOT_RR 
 // #define MOT_RL 
-// #define MOT_CAL
+#define MOT_CAL
+// #define MOT_TEST
 
 // Protections
 #define SOFTOCP 70
@@ -119,8 +120,8 @@
 #define FILENAME "MOT_CAL_%04d%02d%02d_%02d%02d%02d_NEW_V2_4.bin"
 #else
 #ifdef MOT_CAL
-#define ZERO_ELECTRIC_ANGLE 5.75f //should be in radians
-#define MOT_CURR 1.084f
+#define ZERO_ELECTRIC_ANGLE 3.25f //should be in radians
+#define MOT_CURR 0.959f//1.084f
 #define FILENAME "MOT_CAL_%04d%02d%02d_%02d%02d%02d_NEW_V2_4.bin"
 #endif
 #ifdef MOT_FL
@@ -138,6 +139,10 @@
 #define MOT_CURR 0.991f
 #define FILENAME "MOT_RL_%04d%02d%02d_%02d%02d%02d_NEW_V2_4.bin"
 #endif
+#ifdef MOT_TEST
+#define ZERO_ELECTRIC_ANGLE 3.25f //should be in radians
+#define MOT_CURR 0.959f
+#define FILENAME "MOT_TEST_%04d%02d%02d_%02d%02d%02d_NEW_V2_4.bin"
 #endif
 
 #endif
