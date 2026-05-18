@@ -81,12 +81,15 @@ Core/Src/PLL/PLL_data.c \
 Core/Src/PLL/rt_nonfinite.c \
 Core/Src/adc.c \
 Core/Src/as5048a.c \
+Core/Src/can_app.c \
 Core/Src/crc.c \
 Core/Src/current_sense.c \
 Core/Src/dma.c \
 Core/Src/fdcan.c \
+Core/Src/foc_loop.c \
 Core/Src/foc_utils.c \
 Core/Src/gpio.c \
+Core/Src/hw_callbacks.c \
 Core/Src/i2c.c \
 Core/Src/inverter_state.c \
 Core/Src/logger.c \

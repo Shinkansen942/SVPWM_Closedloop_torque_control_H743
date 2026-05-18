@@ -191,7 +191,7 @@ DRESULT SD_read(BYTE lun, BYTE *buff, DWORD sector, UINT count)
   DRESULT res = RES_ERROR;
   uint32_t timeout;
 #if defined(ENABLE_SCRATCH_BUFFER)
-  uint8_t ret;
+  uint8_t ret = MSD_ERROR;
 #endif
 #if (ENABLE_SD_DMA_CACHE_MAINTENANCE == 1)
   uint32_t alignedAddr;
@@ -313,7 +313,7 @@ DRESULT SD_write(BYTE lun, const BYTE *buff, DWORD sector, UINT count)
   DRESULT res = RES_ERROR;
   uint32_t timeout;
 #if defined(ENABLE_SCRATCH_BUFFER)
-  uint8_t ret;
+  uint8_t ret = MSD_ERROR;
   int i;
 #endif
 

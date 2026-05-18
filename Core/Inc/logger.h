@@ -2,6 +2,14 @@
 #define __LOGGER_H__
 
 #include "stdint.h"
+#include <stdio.h>
+#include "tim.h"
+#include "fatfs.h"
+#include "config.h"
+#include "main.h"
+#include "rtc.h"
+#include "sdmmc.h"
+#include <string.h>
 
 typedef struct __attribute__((packed, aligned(32))) LOGGER
 {
@@ -41,6 +49,20 @@ typedef struct __attribute__((packed, aligned(32))) LOGGER
     uint16_t    LGLOGBUF;   //LOGBUF                        2Byte
 } logger_t;
 
-void set_one(logger_t log_struct[2][2]);
+// shared with foc_loop.c (ISR)
+extern logger_t  log_buf[2][3600];
+extern uint8_t   wr_log_buf_num;
+extern uint16_t  wr_log_index;
+extern RTC_DateTypeDef  log_date;
+extern RTC_TimeTypeDef  log_time;
+extern uint8_t   last_sec;
+extern uint16_t  log_subsec;
+extern uint8_t   got_date;
 
+extern FIL MyFile;
+
+void set_one(logger_t log_struct[2][2]);
+void sd_logger_init(void);
+void sd_logger_open_file(void);
+void sd_logger_run(void);
 #endif
