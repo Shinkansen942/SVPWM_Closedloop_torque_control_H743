@@ -39,17 +39,29 @@ add_subdirectory(cmake/stm32cubemx)
 
 # Link directories setup
 target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
-    # Add user defined library search paths
+    Drivers/CMSIS/DSP/Lib/GCC
 )
 
 # Add sources to executable
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
-    # Add user sources here
+    Core/Src/FOC.c
+    Core/Src/as5048a.c
+    Core/Src/current_sense.c
+    Core/Src/foc_utils.c
+    Core/Src/inverter_state.c
+    Core/Src/logger.c
+    Core/Src/lowpass_filter.c
+    Core/Src/motor_control.c
+    Core/Src/pid.c
+    Core/Src/sincos_encoder.c
+    Core/Src/PLL/PLL.c
+    Core/Src/PLL/PLL_data.c
+    Core/Src/PLL/rt_nonfinite.c
 )
 
 # Add include paths
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
-    # Add user defined include paths
+    Core/Inc/PLL
 )
 
 # Add project symbols (macros)
@@ -63,6 +75,5 @@ list(REMOVE_ITEM CMAKE_C_IMPLICIT_LINK_LIBRARIES ob)
 # Add linked libraries
 target_link_libraries(${CMAKE_PROJECT_NAME}
     stm32cubemx
-
-    # Add user defined libraries
+    arm_cortexM7lfdp_math
 )

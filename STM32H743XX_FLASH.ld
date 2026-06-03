@@ -243,6 +243,44 @@ SECTIONS
 
 
 
+  ._ADC1_Area (NOLOAD) :
+  {
+    . = ALIGN(32);
+    *(._ADC1_Area)
+    *(._ADC1_Area*)
+  } > RAM
+
+  ._ADC2_Area (NOLOAD) :
+  {
+    . = ALIGN(32);
+    *(._ADC2_Area)
+    *(._ADC2_Area*)
+  } > RAM
+
+  ._ADC3_Area (NOLOAD) :
+  {
+    . = ALIGN(32);
+    *(._ADC3_Area)
+    *(._ADC3_Area*)
+  } > RAM
+
+  ._RAM_Area (NOLOAD) :
+  {
+    . = ALIGN(32);
+    *(._RAM_Area)
+    *(._RAM_Area*)
+  } > RAM
+
+  ._RAM_Area_Unaligned :
+  {
+
+  } > RAM
+
+  ._RAM_D2_Area :
+  {
+    . = ALIGN(32);
+  } > RAM_D2
+
   /* Remove information from the standard libraries */
   /DISCARD/ :
   {
