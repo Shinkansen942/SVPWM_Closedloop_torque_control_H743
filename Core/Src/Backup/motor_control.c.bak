@@ -7,21 +7,14 @@
 
 #include "motor_control.h"
 #include "config.h"
+#include "foc_loop.h"
 #ifndef M_PI
   #define M_PI 3.14159265358979323846
 #endif
 #define _HIGH_IMPEDANCE 0
 
-extern float zero_electric_angle;
-extern int pole_pairs;
-extern float shaft_angle;
-extern int dir;
-extern float voltage_limit;
-extern float voltage_power_supply;
-extern int period;
-// extern float angle_prev;
-extern float Ts;
-extern float max_current;
+extern motor_params_t motor;
+extern foc_state_t foc;
 
 int trap_120_map[6][3] = {
   {_HIGH_IMPEDANCE,1,-1},
@@ -46,34 +39,34 @@ float _normalizeAngle(float angle){
 }
 
 float _electricalAngle(float shaft_angle, int pole_pairs) {
-  return _normalizeAngle(((float)(dir * pole_pairs)*shaft_angle)-zero_electric_angle);
+  return _normalizeAngle(((float)(motor.dir * pole_pairs)*shaft_angle)-motor.zero_electric_angle);
 }
 
 void setPwm(float Ua, float Ub, float Uc, TIM_TypeDef * TIM_BASE) {
 //	// 限制上限
-	// Ua = _constrain(Ua, 0.0f, voltage_limit);
-	// Ub = _constrain(Ub, 0.0f, voltage_limit);
-	// Uc = _constrain(Uc, 0.0f, voltage_limit);
+	// Ua = _constrain(Ua, 0.0f, motor.voltage_limit);
+	// Ub = _constrain(Ub, 0.0f, motor.voltage_limit);
+	// Uc = _constrain(Uc, 0.0f, motor.voltage_limit);
 	// 计算占空比
 	// 限制占空比从0到1
-	// float dc_a = _constrain(Ua / voltage_power_supply, 0.0f , 1.0f );
-	// float dc_b = _constrain(Ub / voltage_power_supply, 0.0f , 1.0f );
-	// float dc_c = _constrain(Uc / voltage_power_supply, 0.0f , 1.0f );
+	// float dc_a = _constrain(Ua / motor.voltage_power_supply, 0.0f , 1.0f );
+	// float dc_b = _constrain(Ub / motor.voltage_power_supply, 0.0f , 1.0f );
+	// float dc_c = _constrain(Uc / motor.voltage_power_supply, 0.0f , 1.0f );
 
   float dc_a = _constrain(Ua , 0.0f , 1.0f );
 	float dc_b = _constrain(Ub , 0.0f , 1.0f );
 	float dc_c = _constrain(Uc , 0.0f , 1.0f );
 
 	//写入PWM到PWM 0 1 2 通道
-	TIM_BASE->CCR1 = (uint32_t) roundf(dc_a*period);
-	TIM_BASE->CCR2 = (uint32_t) roundf(dc_b*period);
-	TIM_BASE->CCR3 = (uint32_t) roundf(dc_c*period);
+	TIM_BASE->CCR1 = (uint32_t) roundf(dc_a*foc.period);
+	TIM_BASE->CCR2 = (uint32_t) roundf(dc_b*foc.period);
+	TIM_BASE->CCR3 = (uint32_t) roundf(dc_c*foc.period);
 
 }
 
 void setPhaseVoltage(float Uq,float Ud, float angle_el, TIM_TypeDef * TIM_BASE,float Va,float Vb,float Vc) {
   angle_el = _normalizeAngle(angle_el);
-  
+
   // #ifdef VQ_LEQ_0
   // if (Uq <0 ){
 	//   angle_el+=M_PI;
@@ -96,9 +89,9 @@ void setPhaseVoltage(float Uq,float Ud, float angle_el, TIM_TypeDef * TIM_BASE,f
   Ua -= Va;
   Ub -= Vb;
   Uc -= Vc;
-  float Da = _constrain((Ua / voltage_power_supply+1)/2,0.0f,1.0f);
-  float Db = _constrain((Ub / voltage_power_supply+1)/2,0.0f,1.0f);
-  float Dc = _constrain((Uc / voltage_power_supply+1)/2,0.0f,1.0f);
+  float Da = _constrain((Ua / motor.voltage_power_supply+1)/2,0.0f,1.0f);
+  float Db = _constrain((Ub / motor.voltage_power_supply+1)/2,0.0f,1.0f);
+  float Dc = _constrain((Uc / motor.voltage_power_supply+1)/2,0.0f,1.0f);
   #ifdef SVPWM
   float center = 0.5f;
   // discussed here: https://community.simplefoc.com/t/embedded-world-2023-stm32-cordic-co-processor/3107/165?u=candas1
@@ -115,8 +108,8 @@ void setPhaseVoltage(float Uq,float Ud, float angle_el, TIM_TypeDef * TIM_BASE,f
   angle_el =  _normalizeAngle (angle_el+M_PI/2);
   int sector = floor(angle_el / M_PI*3) + 1;
   // calculate the duty cycles
-  float T1 = _SQRT3 * sin(sector * M_PI/3 - angle_el) * Uq / voltage_power_supply;
-  float T2 = _SQRT3 * sin(angle_el - (sector - 1.0) * M_PI/3) * Uq / voltage_power_supply;
+  float T1 = _SQRT3 * sin(sector * M_PI/3 - angle_el) * Uq / motor.voltage_power_supply;
+  float T2 = _SQRT3 * sin(angle_el - (sector - 1.0) * M_PI/3) * Uq / motor.voltage_power_supply;
   float T0 = 1 - T1 - T2;
 
 
@@ -159,13 +152,13 @@ void setPhaseVoltage(float Uq,float Ud, float angle_el, TIM_TypeDef * TIM_BASE,f
       Tc = 0;
   }
   // 克拉克逆变换
-  float Ua = Ta * voltage_power_supply;
-  float Ub = Tb * voltage_power_supply;
-  float Uc = Tc * voltage_power_supply;
+  float Ua = Ta * motor.voltage_power_supply;
+  float Ub = Tb * motor.voltage_power_supply;
+  float Uc = Tc * motor.voltage_power_supply;
   #endif
-  // Ua = Da * voltage_power_supply;
-  // Ub = Db * voltage_power_supply;
-  // Uc = Dc * voltage_power_supply;
+  // Ua = Da * motor.voltage_power_supply;
+  // Ub = Db * motor.voltage_power_supply;
+  // Uc = Dc * motor.voltage_power_supply;
   setPwm(Da,Db,Dc,TIM_BASE);
 }
 
@@ -178,7 +171,7 @@ void setSixStepPhaseVoltage(float Uq, float angle_el, TIM_TypeDef* TIM_BASE)
   // centering the voltages around either
   // modulation_centered == true > driver.voltage_limit/2
   // modulation_centered == false > or Adaptable centering, all phases drawn to 0 when Uq=0
-  center = voltage_power_supply/2;
+  center = motor.voltage_power_supply/2;
   if(trap_120_map[sector][0]  == _HIGH_IMPEDANCE){
     Ua = center;
     Ub = trap_120_map[sector][1] * Uq + center;
@@ -214,7 +207,7 @@ float cal_angular_vel(float angle_now,float* speed_rad)
       return_value = 1.0f;
     }
     angle_prev=angle_now;
-    *speed_rad = delta_angle / Ts;
+    *speed_rad = delta_angle / motor.Ts;
     return return_value;
 
 
@@ -237,7 +230,7 @@ void cal_Idq(float* current_phase, float angle_el, float* Id, float* Iq)
 void get_target_Idq(float Is, float speed_RPM, float* Id, float* Iq)
 {
   float omega_e = (float)speed_RPM * 4 * 2.0f * M_PI / 60.0f;
-  float discriminant = 8.08e-10f - (0.000000023333333333333339336063836389849*voltage_power_supply*voltage_power_supply)/omega_e/omega_e;
+  float discriminant = 8.08e-10f - (0.000000023333333333333339336063836389849*motor.voltage_power_supply*motor.voltage_power_supply)/omega_e/omega_e;
   float Id_optimal = 171.5 - sqrt((29412.25f + 0.5*Is*Is));
   discriminant = -1;
 
@@ -245,10 +238,10 @@ void get_target_Idq(float Is, float speed_RPM, float* Id, float* Iq)
   {
     float sqrt_discriminant = sqrtf(discriminant);
     Id_optimal = 293.99999999999986840738140870695 - 14285714.2857142820391445899654*sqrt_discriminant;
-    Id_optimal = _constrain(Id_optimal, -max_current, 0.0f);
+    Id_optimal = _constrain(Id_optimal, -motor.max_current, 0.0f);
   }
 
   float Iq_optimal = _sign(Is)*sqrt(Is*Is - Id_optimal*Id_optimal);
-  *Id = _constrain(Id_optimal,-max_current,0.0f);
+  *Id = _constrain(Id_optimal,-motor.max_current,0.0f);
   *Iq = Iq_optimal;
 }
