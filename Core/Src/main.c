@@ -65,6 +65,8 @@
 #define CODE_VER 0x3
 // #define NUM_SECTIONS 7 // Number of sections in the Biquad filter
 #define NUM_TAPS 558
+#define _constrain(amt, low, high)                                             \
+  ((amt) < (low) ? (low) : ((amt) > (high) ? (high) : (amt)))
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -327,7 +329,8 @@ int main(void)
   // log_buf[0][0].LGSTATE = 0;
   for (size_t i = 0; i < 1024; i++)
   {
-    Mot_Conv[i] = (int16_t)10*((float)(1650-(3300*i/1024))/Mot_Curr/3.795-1000/3.795);
+    // Mot_Conv[i] = (int16_t)10*((float)(1650-(3300*i/1024))/Mot_Curr/3.795-1000/3.795);
+    Mot_Conv[i] = (int16_t)_constrain(10 *(((float)-10560*i+2334720)/(3.795*(1382.4+3.3*i))), -32768, 32767);
     // Mot_Conv[i] = (int16_t)10*((float)(0.5*(3300*i/1024))/Mot_Curr/3.795-1000/3.795);
     // if (Mot_Conv[i] < 0)
     // {

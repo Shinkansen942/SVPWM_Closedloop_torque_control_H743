@@ -16,7 +16,7 @@
 #define SVPWM           //define to use SVPWM
 #define Decouopling    //define to enable decoupling in current controller
 #define ANTI_WINDUP     //define to enable anti windup in PID controllers
-#define FIELD_WEAKENING //define to enable field weakening control
+// #define FIELD_WEAKENING //define to enable field weakening control
 // #define FIELD_WEAKENING_ANGLE // define to enable field weakening angle control
 // #define MTPA            //define to enable MTPA control
 // #define DISABLE_MOT_OT //define to disable motor overtemperature fault
@@ -26,8 +26,9 @@
 
 // Motor number
 // #define MOT_FL
-#define MOT_RR 
-// #define MOT_RL 
+// #define MOT_FR
+// #define MOT_RR 
+#define MOT_RL 
 // #define MOT_CAL
 
 // Protections
@@ -84,7 +85,7 @@
 
 #ifdef FREQ_11KHZ
 #define FREQ 11000
-#define CCR 10908 // 11000Hz PWM frequency
+#define DEF_CCR 10908 // 11000Hz PWM frequency
 #define QTF 0.0008f
 #define DTF 0.0008f
 #define ABCTF 0.00008f
@@ -94,7 +95,7 @@
 
 #ifdef FREQ_13KHZ
 #define FREQ 13000
-#define CCR 9230 // 13000Hz PWM frequency
+#define DEF_CCR 9230 // 13000Hz PWM frequency
 #define QTF 0.000677f
 #define DTF 0.000677f
 #define ABCTF 0.0000677f
@@ -116,27 +117,33 @@
 #ifdef CAL_ZERO_ANGLE
 #define ZERO_ELECTRIC_ANGLE 0.0f //should be in radians
 #define MOT_CURR 1.0f
-#define FILENAME "MOT_CAL_%04d%02d%02d_%02d%02d%02d_NEW_V2_4.bin"
+#define FILENAME "MOT_CAL_%04d%02d%02d_%02d%02d%02d_NEW_V2_5.bin"
+#define MOT_ID 0
 #else
 #ifdef MOT_CAL
 #define ZERO_ELECTRIC_ANGLE 5.75f //should be in radians
 #define MOT_CURR 1.084f
-#define FILENAME "MOT_CAL_%04d%02d%02d_%02d%02d%02d_NEW_V2_4.bin"
+#define FILENAME "MOT_CAL_%04d%02d%02d_%02d%02d%02d_NEW_V2_5.bin"
 #endif
 #ifdef MOT_FL
-#define ZERO_ELECTRIC_ANGLE 5.75f //should be in radians
+#define ZERO_ELECTRIC_ANGLE 1.93f //should be in radians
 #define MOT_CURR 1.156f
-#define FILENAME "MOT_FL_%04d%02d%02d_%02d%02d%02d_NEW_V2_4.bin"
+#define FILENAME "MOT_FL_%04d%02d%02d_%02d%02d%02d_NEW_V2_5.bin"
+#endif
+#ifdef MOT_FR
+#define ZERO_ELECTRIC_ANGLE 4.51f // should be in radians
+#define MOT_CURR 1.156f
+#define FILENAME "MOT_FR_%04d%02d%02d_%02d%02d%02d_NEW_V2_5.bin"
 #endif
 #ifdef MOT_RR
-#define ZERO_ELECTRIC_ANGLE 1.33f //should be in radians
+#define ZERO_ELECTRIC_ANGLE 3.93f //should be in radians
 #define MOT_CURR 0.907f
-#define FILENAME "MOT_RR_%04d%02d%02d_%02d%02d%02d_NEW_V2_4.bin"
+#define FILENAME "MOT_RR_%04d%02d%02d_%02d%02d%02d_NEW_V2_5.bin"
 #endif
 #ifdef MOT_RL
-#define ZERO_ELECTRIC_ANGLE 4.86f //should be in radians
+#define ZERO_ELECTRIC_ANGLE 3.57f //should be in radians
 #define MOT_CURR 0.991f
-#define FILENAME "MOT_RL_%04d%02d%02d_%02d%02d%02d_NEW_V2_4.bin"
+#define FILENAME "MOT_RL_%04d%02d%02d_%02d%02d%02d_NEW_V2_5.bin"
 #endif
 #endif
 
