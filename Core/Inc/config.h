@@ -1,4 +1,4 @@
-#ifndef __CONFIG_H__
+// #ifndef __CONFIG_H__
 #define __CONFIG_H__
 
 /* ================================================================
@@ -30,9 +30,10 @@
  *  MOTOR SELECTION - Choose Motor Type
  * ================================================================ */
 // #define MOT_FL
-// #define MOT_RR
-// #define MOT_RL
+// #define MOT_RR 
+// #define MOT_RL 
 #define MOT_CAL
+// #define MOT_TEST
 
 /* ================================================================
  *  PROTECTION - Safety Thresholds
@@ -176,6 +177,10 @@
 #define MOT_CURR 0.991f
 #define FILENAME "MOT_RL_%04d%02d%02d_%02d%02d%02d_NEW_V2_4.bin"
 #endif
+#ifdef MOT_TEST
+#define ZERO_ELECTRIC_ANGLE 3.25f //should be in radians
+#define MOT_CURR 0.959f
+#define FILENAME "MOT_TEST_%04d%02d%02d_%02d%02d%02d_NEW_V2_4.bin"
 #endif
 
 /* ================================================================

@@ -1,11 +1,66 @@
 /*
- * inerter_state.c
+ * inverter_state.c
+ *
+ * Inverter State Machine & Fault Management
+ * Owns the system state (Ready / Running / Error) and
+ * provides the safety-critical state transition functions.
  *
  *  Created on: Feb 25, 2025
  *      Author: J.U
  */
 
 #include "inverter_state.h"
+#include "main.h"             // GPIO defines (Motor_Enable_Pin, LED_RUN_Pin, ...)
+#include "lowpass_filter.h"   // LowPassFilter_reset()
+#include "foc_loop.h"         // foc_state_t
 
+/* ================================================================
+ *  Extern declarations – variables defined in other modules
+ * ================================================================ */
 
-// extern INV_Statustypedef inverter_state = INV_STARTING;
+// --- FOC state (from foc_loop.h & main.c) ---
+extern foc_state_t foc;
+extern lpf_t  filter_current_Iabc[3];
+extern lpf_t  filter_current_Iq;
+extern lpf_t  filter_current_Id;
+
+/* ================================================================
+ *  State variables (owned by this module)
+ * ================================================================ */
+
+INV_Statustypedef inverter_state = STATE_INIT;
+INV_Errortypedef  error_state    = ERROR_NONE;
+
+/* ================================================================
+ *  State transition functions
+ * ================================================================ */
+
+void Enter_ERROR_State(INV_Errortypedef error)
+{
+  inverter_state = STATE_ERROR;
+  error_state = error;
+  foc.enable_hw_oc = 0;
+  HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(LED_RUN_GPIO_Port,LED_RUN_Pin,GPIO_PIN_RESET);
+  LowPassFilter_reset(&filter_current_Iabc[0]);
+  LowPassFilter_reset(&filter_current_Iabc[1]);
+  LowPassFilter_reset(&filter_current_Iabc[2]);
+  LowPassFilter_reset(&filter_current_Iq);
+  LowPassFilter_reset(&filter_current_Id);
+  // LowPassFilter_reset(&filter_RPM);
+}
+
+void Enter_READY_State(void)
+{
+  inverter_state = STATE_READY;
+  error_state = ERROR_NONE;
+  foc.enable_hw_oc = 0;
+  HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(LED_RUN_GPIO_Port,LED_RUN_Pin,GPIO_PIN_SET);
+  LowPassFilter_reset(&filter_current_Iabc[0]);
+  LowPassFilter_reset(&filter_current_Iabc[1]);
+  LowPassFilter_reset(&filter_current_Iabc[2]);
+  LowPassFilter_reset(&filter_current_Iq);
+  LowPassFilter_reset(&filter_current_Id);
+  // LowPassFilter_reset(&filter_RPM);
+}

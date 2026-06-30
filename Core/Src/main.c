@@ -196,8 +196,10 @@ int main(void)
   for (size_t i = 0; i < 1024; i++)
   {
     float voltage = (float)(3.3*i/1024);
-    // Mot_Conv[i] = (int16_t)10*(voltage/Mot_Curr/3.795-1000/3.795);
-    Inv_Conv[i] = (int16_t)10*(float)((float)(2000*voltage-3300)/((float)(3.3-voltage)*3.8505));
+    // Mot_Conv[i] = (int16_t)10*((float)(1650-(3300*i/1024))/Mot_Curr/3.795-1000/3.795);
+    // Mot_Conv[i] = (int16_t)10*((float)(3300*i/1024)/Mot_Curr/3.795-1000/3.795);
+
+    Inv_Conv[i] = (int16_t)10*(float)((2000*voltage-3300)/((3.3-voltage)*3.8505));
     Mot_Conv[i] = (int16_t)10*((float)(0.5*(3300*i/1024))/Mot_Curr/3.795-1000/3.795);
     // if (Mot_Conv[i] < 0)
     // {
