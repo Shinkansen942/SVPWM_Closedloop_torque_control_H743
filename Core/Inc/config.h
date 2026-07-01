@@ -23,10 +23,10 @@
 // #define OVERSPEED_PROT  //define to enable overspeed protection
 #define FW_STARTUP_ID_FIX   //define to enable fixed d-axis current during field weakening startup
 // #define PERMANENT_FLUX      //define to always apply maximum flux weakening current
-
+// #define MAX_600V            //600V sensing, undefine to use 400V sensing
 // Motor number
 // #define MOT_FL
-// #define MOT_FR
+// #define MOT_FR //use FR board with MAX_600V
 // #define MOT_RR 
 #define MOT_RL 
 // #define MOT_CAL

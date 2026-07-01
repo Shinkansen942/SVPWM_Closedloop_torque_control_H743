@@ -853,8 +853,13 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     }
 
     angle_now = _normalizeAngle(angle_now);
-    
+    #ifdef MAX_600V
+    voltage_power_supply = (float)ADC3_arr[0]*DCVPLSB* 11/8;  //FR
+    #else
     voltage_power_supply = (float)ADC3_arr[0]*DCVPLSB;
+    #endif
+    
+
     voltage_limit = voltage_power_supply;
 
     float angular_vel = 0.0f;
