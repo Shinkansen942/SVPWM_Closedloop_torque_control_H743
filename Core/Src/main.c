@@ -36,6 +36,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <math.h>
+#include <stdint.h>
 // #include "usbd_cdc_if.h"
 #include "string.h"
 // #include "as5048a.h"
@@ -148,6 +149,7 @@ int16_t T_U;
 int16_t T_V;
 int16_t T_W;
 uint16_t report_DCV;
+int16_t report_DCA;
 
 #ifdef OPEN_LOOP_SPEED
 float open_loop_rpm_var = OPEN_LOOP_RPM;
@@ -272,6 +274,7 @@ lpf_t filter_current_Iabc[3] = {{.Tf = ABCTF,.y_prev=0.0f},{.Tf = ABCTF,.y_prev=
 lpf_t filter_crrent_DC_Iabc[3] = {{.Tf = DCTF,.y_prev=0.0f},{.Tf = DCTF,.y_prev=0.0f},{.Tf = DCTF,.y_prev=0.0f}}; //Tf=2ms
 lpf_t filter_RPM = {.Tf=RPMTF,.y_prev=0.0f};
 lpf_t filter_Idfw = {.Tf=FWTF,.y_prev=0.0f};
+lpf_t filter_Idc = {.Tf=REPORTDCTF,.y_prev=0.0f};
 lpf_t filter_report_torque = {.Tf=0.008f,.y_prev=0.0f}; //Tf=100ms
 pidc_t pid_controller_current_Iq = {.P=QKP,.I=QKI,.D=QKD,.output_ramp=PID_RAMP,.limit=PID_LIMIT,.error_prev=0,.output_prev=0,.integral_prev=0};
 pidc_t pid_controller_current_Id = {.P=DKP,.I=DKI,.D=DKD,.output_ramp=PID_RAMP,.limit=PID_LIMIT,.error_prev=0,.output_prev=0,.integral_prev=0};
@@ -329,8 +332,18 @@ int main(void)
   // log_buf[0][0].LGSTATE = 0;
   for (size_t i = 0; i < 1024; i++)
   {
+    //-----For new ENC_Temp board-----//
+    // float x = 3300*i/1024;
+    // Mot_Conv[i] = (int16_t)((float)((-419.7*x/1000+294.58)*10));
+    // Mot_Conv[i] = (int16_t)((float)(230.36*x*x−716.01*x+389.57)*10);
+    // OR
+    Mot_Conv[i] = (int16_t)((float)(10/3.795)*(float)(-1000+((-0.55*2200+((1.1*2200*i)/(1024)))/(0.55-1.01-(1.1*i/1024)))));
+    //-------------END----------------//
+    
+
+    // Mot_Conv[i] = (int16_t)((float)(1/3.795)*(-1000+((0.55*2200-((1.1*2200*i)/(1024)))/(0.55-1.01-(1.1*i/1024)))));
     // Mot_Conv[i] = (int16_t)10*((float)(1650-(3300*i/1024))/Mot_Curr/3.795-1000/3.795);
-    Mot_Conv[i] = (int16_t)_constrain(10 *(((float)-10560*i+2334720)/(3.795*(1382.4+3.3*i))), -32768, 32767);
+    // Mot_Conv[i] = (int16_t)_constrain(10 *(((float)-10560*i+2334720)/(3.795*(1382.4+3.3*i))), -32768, 32767);
     // Mot_Conv[i] = (int16_t)10*((float)(0.5*(3300*i/1024))/Mot_Curr/3.795-1000/3.795);
     // if (Mot_Conv[i] < 0)
     // {
@@ -907,6 +920,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     #ifdef DISALBE_MOT_OT
     temp_derate = _constrain(((float)abs(T_Mot)-(float)T_DERATE_END)/(T_DERATE_START-T_DERATE_END),0.0f,1.0f);
     #endif
+    #ifdef MOT_TEMP_DERATE
+    temp_derate = _constrain(((float)abs(T_Mot)-(float)T_DERATE_END)/(T_DERATE_START-T_DERATE_END),0.0f,1.0f);
+    #endif
 
     last_percent = _constrain(last_percent,-temp_derate,temp_derate);
     float target_Is = max_current*last_percent;
@@ -1012,7 +1028,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     }
 
     report_DCV = (uint16_t) roundf(voltage_power_supply*100);
-    int16_t report_DCA = (int16_t) roundf((float)(ADC1_arr[3]-current_offset[3])*DCAPLSB*100);
+    report_DCA = (int16_t) roundf((float)(ADC1_arr[3]-current_offset[3])*DCAPLSB*100);
+    report_DCA = LowPassFilter_operator(report_DCA,&filter_Idc);
     if (indexHeartbeat == freq/10)
     {
       CAN_Send_Temp(ADC3_arr);

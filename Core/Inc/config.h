@@ -16,7 +16,8 @@
 #define SVPWM           //define to use SVPWM
 #define Decouopling    //define to enable decoupling in current controller
 #define ANTI_WINDUP     //define to enable anti windup in PID controllers
-// #define FIELD_WEAKENING //define to enable field weakening control
+#define MOT_TEMP_DERATE //define to enable motor temperature derate
+#define FIELD_WEAKENING //define to enable field weakening control
 // #define FIELD_WEAKENING_ANGLE // define to enable field weakening angle control
 // #define MTPA            //define to enable MTPA control
 // #define DISABLE_MOT_OT //define to disable motor overtemperature fault
@@ -24,11 +25,13 @@
 #define FW_STARTUP_ID_FIX   //define to enable fixed d-axis current during field weakening startup
 // #define PERMANENT_FLUX      //define to always apply maximum flux weakening current
 // #define MAX_600V            //600V sensing, undefine to use 400V sensing
+
+
 // Motor number
 // #define MOT_FL
-// #define MOT_FR //use FR board with MAX_600V
+#define MOT_FR //use FR board with MAX_600V
 // #define MOT_RR 
-#define MOT_RL 
+// #define MOT_RL 
 // #define MOT_CAL
 
 // Protections
@@ -78,8 +81,8 @@
 #define DERATE_START        9000    //should be in RPM, 1000 is 1000RPM
 #define DERATE_END          13000   //should be in RPM, 12000 is 12000RPM
 #define RAMP_TIME_DERATE    5       //time from 0 to 100 percent
-#define T_DERATE_START      700      //should be 10 times in deg C, 500 is 50 deg C
-#define T_DERATE_END        850      //should be 10 times in deg C, 800 is 80 deg C
+#define T_DERATE_START      800      //should be 10 times in deg C, 500 is 50 deg C
+#define T_DERATE_END        900      //should be 10 times in deg C, 800 is 80 deg C
 
 #define FREQ_23KHZ
 
@@ -112,6 +115,7 @@
 #define RPMTF 0.04783f
 #define DCTF 0.04783f
 #define FWTF 0.04783f
+#define REPORTDCTF 0.004783f
 #endif
 
 #ifdef CAL_ZERO_ANGLE
@@ -126,24 +130,28 @@
 #define FILENAME "MOT_CAL_%04d%02d%02d_%02d%02d%02d_NEW_V2_5.bin"
 #endif
 #ifdef MOT_FL
-#define ZERO_ELECTRIC_ANGLE 1.93f //should be in radians
+#define ZERO_ELECTRIC_ANGLE 1.618f//1.93f //should be in radians
 #define MOT_CURR 1.156f
 #define FILENAME "MOT_FL_%04d%02d%02d_%02d%02d%02d_NEW_V2_5.bin"
 #endif
 #ifdef MOT_FR
-#define ZERO_ELECTRIC_ANGLE 4.51f // should be in radians
+#define ZERO_ELECTRIC_ANGLE 4.31f // should be in radians
 #define MOT_CURR 1.156f
 #define FILENAME "MOT_FR_%04d%02d%02d_%02d%02d%02d_NEW_V2_5.bin"
+#define MAX_600V //define to use 600V sensing, undefine to use 400V sensing
+
 #endif
 #ifdef MOT_RR
 #define ZERO_ELECTRIC_ANGLE 3.93f //should be in radians
 #define MOT_CURR 0.907f
 #define FILENAME "MOT_RR_%04d%02d%02d_%02d%02d%02d_NEW_V2_5.bin"
+// #define MAX_600V //define to use 600V sensing, undefine to use 400V sensing
 #endif
 #ifdef MOT_RL
 #define ZERO_ELECTRIC_ANGLE 3.57f //should be in radians
 #define MOT_CURR 0.991f
 #define FILENAME "MOT_RL_%04d%02d%02d_%02d%02d%02d_NEW_V2_5.bin"
+// #define MAX_600V //define to use 600V sensing, undefine to use 400V sensing
 #endif
 #endif
 
