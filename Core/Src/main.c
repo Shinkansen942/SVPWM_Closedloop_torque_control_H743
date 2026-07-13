@@ -944,7 +944,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     float Id_MTPA = 0.0f;
 
     #ifdef FIELD_WEAKENING
-    Id_fw = field_weaking_control(fabsf(filtered_RPM),fabsf(filtered_Iq),fabsf(Iq_controller_output),voltage_limit);
+    Id_fw = field_weaking_control(fabsf(filtered_RPM),fabsf(filtered_Iq),fabsf(Id_controller_output),voltage_limit);
     #endif
 
     #ifdef MTPA
@@ -977,7 +977,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     Iq_controller_output=PID_operator(target_Iq-filtered_Iq,&pid_controller_current_Iq);
     Id_controller_output=PID_operator(target_Id-filtered_Id,&pid_controller_current_Id);
 
-    #ifdef Decouopling
+    #ifdef DECOUPLING
     // Decoupling
     Id_controller_output += Vd_decoupling;
     Iq_controller_output += Vq_decoupling;

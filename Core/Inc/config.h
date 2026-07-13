@@ -14,7 +14,7 @@
 #define VQ_LEQ_0        //define to use Vq less than 0
 #define MIDDLE_CLAMP    //define to use middle clamp
 #define SVPWM           //define to use SVPWM
-#define Decouopling    //define to enable decoupling in current controller
+#define DECOUPLING    //define to enable decoupling in current controller
 #define ANTI_WINDUP     //define to enable anti windup in PID controllers
 #define MOT_TEMP_DERATE //define to enable motor temperature derate
 #define FIELD_WEAKENING //define to enable field weakening control

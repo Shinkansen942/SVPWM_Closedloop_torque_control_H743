@@ -7,6 +7,7 @@
 
 #include "pid.h"
 #include "motor_control.h"
+#include "config.h"
 extern float Ts;
 float PID_operator(float error, struct PIDController* pid){
     // P环
