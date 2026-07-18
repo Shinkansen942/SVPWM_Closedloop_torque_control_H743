@@ -132,10 +132,15 @@ uint8_t oc_buf[HW_OC_TIME] = {0};
 uint16_t oc_index = 0;
 uint16_t oc_sum = 0;
 
-// __attribute__((section("._RAM_D2_Area"))) 
-uint8_t soft_oc_buf[SOFT_OC_TIME] = {0};
-uint16_t soft_oc_index = 0;
-uint16_t soft_oc_sum = 0;
+// __attribute__((section("._RAM_D2_Area")))
+uint8_t level_1_soft_oc_buf[LEVEL_1_SOFT_OC_TIME] = {0};
+uint16_t level_1_soft_oc_index = 0;
+uint16_t level_1_soft_oc_sum = 0;
+
+// __attribute__((section("._RAM_D2_Area")))
+uint8_t level_2_soft_oc_buf[LEVEL_2_SOFT_OC_TIME] = {0};
+uint16_t level_2_soft_oc_index = 0;
+uint16_t level_2_soft_oc_sum = 0;
 
 // __attribute__((section("._RAM_D2_Area"))) 
 uint8_t enc_buf[ENC_TIME] = {0};
@@ -880,32 +885,52 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     filtered_RPM = LowPassFilter_operator((float)dir*angular_vel/4/2/M_PI*60,&filter_RPM);
 
     float current_phase_dc[3] = {0.0f};
-    int8_t soft_oc_detected = 0;
-    soft_oc_sum = soft_oc_sum - soft_oc_buf[soft_oc_index];
+    int8_t level_1_soft_oc_detected = 0;
+    int8_t level_2_soft_oc_detected = 0;
+    level_1_soft_oc_sum = level_1_soft_oc_sum - level_1_soft_oc_buf[level_1_soft_oc_index];
+    level_2_soft_oc_sum = level_2_soft_oc_sum - level_2_soft_oc_buf[level_2_soft_oc_index];
     for (int i=0;i<3;i++){
        	current_phase[i] =(float) (ADC1_arr[i]-current_offset[i])*ACAPLSB;
         //OCP
         // filtered_Iabc[i] = LowPassFilter_operator(current_phase[i],&filter_current_Iabc[i]);
         current_phase_dc[i] = LowPassFilter_operator(current_phase[i],&filter_crrent_DC_Iabc[i]);
-        if (current_phase[i] > ACAOCP||current_phase[i] < -ACAOCP)
+        if (current_phase[i] > LEVEL_1_ACAOCP||current_phase[i] < -LEVEL_1_ACAOCP)
         {
-          soft_oc_detected = 1;
+          level_1_soft_oc_detected = 1;
+        }
+        if (current_phase[i] > LEVEL_2_ACAOCP||current_phase[i] < -LEVEL_2_ACAOCP)
+        {
+          level_2_soft_oc_detected = 1;
         }
         // current_phase[i] = filtered_Iabc[i];
     }
-    soft_oc_buf[soft_oc_index] = soft_oc_detected;
-    soft_oc_sum += soft_oc_buf[soft_oc_index];
-    if (soft_oc_sum > SOFT_OC_TIME/2)
+    level_1_soft_oc_buf[level_1_soft_oc_index] = level_1_soft_oc_detected;
+    level_1_soft_oc_sum += level_1_soft_oc_buf[level_1_soft_oc_index];
+    if (level_1_soft_oc_sum > LEVEL_1_SOFT_OC_TIME/2)
     {
       if (inverter_state == STATE_RUNNING)
       {
         Enter_ERROR_State(ERROR_INSTANT_OC);
       }    
     }
-    soft_oc_index++;
-    if(soft_oc_index == SOFT_OC_TIME)
+    level_2_soft_oc_buf[level_2_soft_oc_index] = level_2_soft_oc_detected;
+    level_2_soft_oc_sum += level_2_soft_oc_buf[level_2_soft_oc_index];
+    if (level_2_soft_oc_sum > LEVEL_2_SOFT_OC_TIME/2)
     {
-      soft_oc_index = 0;
+      if (inverter_state == STATE_RUNNING)
+      {
+        Enter_ERROR_State(ERROR_INSTANT_OC);
+      }
+    }
+    level_1_soft_oc_index++;
+    level_2_soft_oc_index++;
+    if(level_1_soft_oc_index == LEVEL_1_SOFT_OC_TIME)
+    {
+      level_1_soft_oc_index = 0;
+    }
+    if(level_2_soft_oc_index == LEVEL_2_SOFT_OC_TIME)
+    {
+      level_2_soft_oc_index = 0;
     }
 
     pid_controller_current_Ia.limit = voltage_limit;

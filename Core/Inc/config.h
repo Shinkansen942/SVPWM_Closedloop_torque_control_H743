@@ -36,7 +36,8 @@
 
 // Protections
 #define SOFTOCP 70
-#define ACAOCP 85 //Amp
+#define LEVEL_1_ACAOCP 85 //Amp
+#define LEVEL_2_ACAOCP 120 //Amp
 #define MOVRMSOCP (uint32_t)36000000 //should be 10000*OCP^2
 #define MOS_OTP 1000        //should be 10 times otp temp in deg C
 #define MOT_OTP 900         //should be 10 times otp temp in deg C
@@ -49,7 +50,8 @@
 #define PID_LIMIT 20.0f
 // #define RAMP_TIME 1.0f
 #define HW_OC_TIME          2300    //should be in pwm cycles, 2300 is 100ms
-#define SOFT_OC_TIME        50      //should be in pwm cycles, 50 is 2ms
+#define LEVEL_1_SOFT_OC_TIME        100      //should be in pwm cycles, 100 is 4ms
+#define LEVEL_2_SOFT_OC_TIME       24      //should be in pwm cycles, 24 is 1ms
 #define ENC_TIME            50      //should be in pwm cycles, 50 is 2ms
 #define MAX_FLUX_ID         35.0f   //60A                                                                                                          .0f   //40A
 #define MAX_TORQUE_FW_ID    35.0f   //40A
