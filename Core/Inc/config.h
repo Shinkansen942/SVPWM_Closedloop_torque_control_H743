@@ -29,9 +29,9 @@
 
 // Motor number
 // #define MOT_FL
-#define MOT_FR //use FR board with MAX_600V
+// #define MOT_FR //use FR board with MAX_600V
 // #define MOT_RR 
-// #define MOT_RL 
+#define MOT_RL 
 // #define MOT_CAL
 
 // Protections
@@ -51,8 +51,8 @@
 #define HW_OC_TIME          2300    //should be in pwm cycles, 2300 is 100ms
 #define SOFT_OC_TIME        50      //should be in pwm cycles, 50 is 2ms
 #define ENC_TIME            50      //should be in pwm cycles, 50 is 2ms
-#define MAX_FLUX_ID         30.0f   //60A                                                                                                          .0f   //40A
-#define MAX_TORQUE_FW_ID    30.0f   //40A
+#define MAX_FLUX_ID         35.0f   //60A                                                                                                          .0f   //40A
+#define MAX_TORQUE_FW_ID    35.0f   //40A
 #define MINIMUM_FW_ID       2.0f    //2A
 
 #define QKP     0.8f   // 2.3f //4.8f
@@ -145,7 +145,7 @@
 #define ZERO_ELECTRIC_ANGLE 3.93f //should be in radians
 #define MOT_CURR 0.907f
 #define FILENAME "MOT_RR_%04d%02d%02d_%02d%02d%02d_NEW_V2_5.bin"
-// #define MAX_600V //define to use 600V sensing, undefine to use 400V sensing
+#define MAX_600V //define to use 600V sensing, undefine to use 400V sensing
 #endif
 #ifdef MOT_RL
 #define ZERO_ELECTRIC_ANGLE 3.57f //should be in radians
