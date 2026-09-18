@@ -37,6 +37,7 @@ typedef enum
 
 enum control_bits
 {
+    CTRL_REGEN = BIT(1),
     CTRL_ENABLE = BIT(3),
     CTRL_FAULT_RESET = BIT(5),
 };

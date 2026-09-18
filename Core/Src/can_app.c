@@ -350,29 +350,55 @@ void CAN_Send_Perameter(void)
 
 void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
 {
-  if ((RxFifo0ITs & FDCAN_IT_RX_FIFO0_NEW_MESSAGE)!=0)
+  // Check for new message interrupt on RX FIFO0
+  if ((RxFifo0ITs & FDCAN_IT_RX_FIFO0_NEW_MESSAGE) != 0)
   {
-    HAL_GPIO_TogglePin(LED_CAN_GPIO_Port,LED_CAN_Pin);
+    // Toggle CAN LED for visual feedback
+    HAL_GPIO_TogglePin(LED_CAN_GPIO_Port, LED_CAN_Pin);
+
+    // Read message from FIFO0
     uint8_t RxData1[6];
-    HAL_FDCAN_GetRxMessage(hfdcan,FDCAN_RX_FIFO0,&RxHeader1,RxData1);
+    HAL_FDCAN_GetRxMessage(hfdcan, FDCAN_RX_FIFO0, &RxHeader1, RxData1);
+
+    // Process only FDCAN1 instance
     if (hfdcan->Instance == FDCAN1)
     {
-      if (RxHeader1.Identifier == CAN_ID_CONTROL+MOT_ID)
+      // Process only control command messages
+      if (RxHeader1.Identifier == CAN_ID_CONTROL + MOT_ID)
       {
         int16_t torque_command;
+
+        // Parse 16-bit control word from bytes 0-1
         control = RxData1[0] | (uint16_t)RxData1[1] << 8;
-        if(inverter_state != STATE_ERROR)
+
+        // Process enable/disable control only when not in error state
+        if (inverter_state != STATE_ERROR)
         {
-          // enable
-          if (control & CTRL_ENABLE && motor.voltage_power_supply >= 20 && inverter_state == STATE_READY && HAL_GPIO_ReadPin(GATE_Ready_GPIO_Port,GATE_Ready_Pin) ==
-GPIO_PIN_SET )
+          // Motor enable logic
+          if (control & CTRL_ENABLE &&
+              motor.voltage_power_supply >= 20 &&
+              inverter_state == STATE_READY &&
+              HAL_GPIO_ReadPin(GATE_Ready_GPIO_Port, GATE_Ready_Pin) == GPIO_PIN_SET)
           {
+            // Transition to running state
             inverter_state = STATE_RUNNING;
             indexMusic = 0;
-            HAL_GPIO_WritePin(LED_ERR_GPIO_Port,LED_ERR_Pin,GPIO_PIN_RESET);
-            HAL_GPIO_WritePin(LED_RUN_GPIO_Port,LED_RUN_Pin,GPIO_PIN_SET);
+
+            // Update LED indicators
+            HAL_GPIO_WritePin(LED_ERR_GPIO_Port, LED_ERR_Pin, GPIO_PIN_RESET);
+            HAL_GPIO_WritePin(LED_RUN_GPIO_Port, LED_RUN_Pin, GPIO_PIN_SET);
+
+            // Check regen state
+            if (control & CTRL_REGEN)
+            {
+              foc.enable_regen = true;
+            }
+            
+            // Initialize torque request to zero for safe startup
             foc.percent_torque_requested = 0;
             foc.enable_hw_oc = 1;
+
+            // Initialize hardware overcurrent protection buffer
             for (size_t i = 0; i < HW_OC_TIME; i++)
             {
               prot.oc_buf[i] = 0;
@@ -380,6 +406,7 @@ GPIO_PIN_SET )
             prot.oc_sum = 0;
             prot.oc_index = 0;
 
+            // Initialize software overcurrent protection buffer
             prot.soft_oc_sum = 0;
             prot.soft_oc_index = 0;
             for (size_t i = 0; i < SOFT_OC_TIME; i++)
@@ -387,12 +414,15 @@ GPIO_PIN_SET )
               prot.soft_oc_buf[i] = 0;
             }
 
+            // Initialize encoder fault detection buffer
             prot.enc_sum = 0;
             prot.enc_index = 0;
             for (size_t i = 0; i < ENC_TIME; i++)
             {
               prot.enc_buf[i] = 0;
             }
+
+            // Startup Id filter fix for high RPM conditions
             #ifdef FW_STARTUP_ID_FIX
             if (fabsf(foc.filtered_RPM) > 6000.0f)
             {
@@ -400,31 +430,42 @@ GPIO_PIN_SET )
             }
             #endif
 
-            HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_SET);
-          // disable
-          } else if (!(control & CTRL_ENABLE) && inverter_state == STATE_RUNNING)
+            // Enable motor drive
+            HAL_GPIO_WritePin(Motor_Enable_GPIO_Port, Motor_Enable_Pin, GPIO_PIN_SET);
+          }
+          // Motor disable logic
+          else if (!(control & CTRL_ENABLE) && inverter_state == STATE_RUNNING)
           {
+            // Transition back to ready state
             inverter_state = STATE_READY;
-            HAL_GPIO_WritePin(LED_ERR_GPIO_Port,LED_ERR_Pin,GPIO_PIN_RESET);
+            HAL_GPIO_WritePin(LED_ERR_GPIO_Port, LED_ERR_Pin, GPIO_PIN_RESET);
             foc.percent_torque_requested = 0;
             foc.enable_hw_oc = 0;
-            HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_RESET);
-            // got_date = 0;
+            foc.enable_regen = false;
+            HAL_GPIO_WritePin(Motor_Enable_GPIO_Port, Motor_Enable_Pin, GPIO_PIN_RESET);
           }
+          // Safety fallback: ensure motor is disabled when conditions are not met
           else
           {
             foc.enable_hw_oc = 0;
-            HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_RESET);
+            foc.enable_regen = false;
+            HAL_GPIO_WritePin(Motor_Enable_GPIO_Port, Motor_Enable_Pin, GPIO_PIN_RESET);
           }
         }
-        // fault reset
-        if((control & CTRL_FAULT_RESET) && inverter_state == STATE_ERROR )
+
+        // Fault reset logic
+        if ((control & CTRL_FAULT_RESET) && inverter_state == STATE_ERROR)
         {
           inverter_state = STATE_READY;
           error_state = ERROR_NONE;
+          foc.enable_regen = false;
         }
+
+        // Parse torque command from bytes 2-3 and convert to percentage
         torque_command = RxData1[2] | RxData1[3] << 8;
-        foc.percent_torque_requested = (float)torque_command/1000;
+        foc.percent_torque_requested = (float)torque_command / 1000;
+
+        // Reset CAN communication timeout timer
         CAN_Timer = 0;
       }
     }

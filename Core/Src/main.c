@@ -114,6 +114,7 @@ foc_state_t foc = {
     .max_ramp = 1/FREQ/RAMP_TIME_DERATE,
     .period = DEF_CCR,
     .freq = FREQ,
+    .enable_regen = false
 };
 
 // Current filter

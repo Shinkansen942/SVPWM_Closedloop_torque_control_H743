@@ -285,6 +285,8 @@ static void foc_control_step(float *phase_dc, float *Iabc_controller_output)
   temp_derate = _constrain(((float)abs(T_Mot)-(float)T_DERATE_END)/(T_DERATE_START-T_DERATE_END),0.0f,1.0f);
   #endif
 
+  // TO-DO! add regen logic here
+
   foc.last_percent = _constrain(foc.last_percent, -temp_derate, temp_derate);
   float target_Is = motor.max_current * foc.last_percent;
   foc.target_Iq = target_Is;

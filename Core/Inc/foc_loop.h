@@ -9,6 +9,7 @@
 #define INC_FOC_LOOP_H_
 
 #include <stdint.h>
+#include <stdbool.h>
 #include "config.h"
 #include "pid.h"               // for pidc_t
 #include "lowpass_filter.h"    // for lpf_t
@@ -82,6 +83,7 @@ typedef struct {
     uint8_t enable_dc_control;
     uint8_t fast_stop_enable;
     uint8_t run;
+    volatile bool enable_regen;
 
     // --- Hardware config ---
     int   period;                // PWM half-period (timer counts)
