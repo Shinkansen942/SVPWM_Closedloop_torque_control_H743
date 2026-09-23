@@ -75,6 +75,7 @@ typedef struct {
 
     // --- Torque request & ramp ---
     float percent_torque_requested;
+    float percent_power_requested;
     float last_percent;
     float abs_last_percent;
     float max_ramp;

@@ -11,6 +11,7 @@
 #include "lowpass_filter.h"
 #include "rtc.h"
 #include "inverter_state.h"
+#include <stdint.h>
 #include <string.h>
 #include <math.h>
 #include "time.h"
@@ -367,6 +368,7 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
       if (RxHeader1.Identifier == CAN_ID_CONTROL + MOT_ID)
       {
         int16_t torque_command;
+        int16_t power_command;
 
         // Parse 16-bit control word from bytes 0-1
         control = RxData1[0] | (uint16_t)RxData1[1] << 8;
@@ -464,6 +466,10 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
         // Parse torque command from bytes 2-3 and convert to percentage
         torque_command = RxData1[2] | RxData1[3] << 8;
         foc.percent_torque_requested = (float)torque_command / 1000;
+
+        // Parse power command from bytes 4-5 and convert to percentage
+        power_command = RxData1[4] | RxData1[5] << 8;
+        foc.percent_power_requested = (float)power_command / 1000;
 
         // Reset CAN communication timeout timer
         CAN_Timer = 0;
