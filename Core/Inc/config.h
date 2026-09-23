@@ -25,6 +25,21 @@
 // #define OVERSPEED_PROT  //define to enable overspeed protection
 #define FW_STARTUP_ID_FIX   //define to enable fixed d-axis current during field weakening startup
 // #define PERMANENT_FLUX      //define to always apply maximum flux weakening current
+#define Torque_Control      //define to enable torque convertion based on last_percent and Id
+
+
+/* ================================================================
+ *  Inverter SELECTION - Choose Inverter Type
+ * ================================================================ */
+
+ // #define Discrete_Inverter
+
+#ifndef Discrete_Inverter
+
+#define Module_Inverter
+
+#endif
+
 
 /* ================================================================
  *  MOTOR SELECTION - Choose Motor Type
@@ -113,6 +128,10 @@
 #define T_DERATE_START      700      //should be 10 times in deg C, 500 is 50 deg C
 #define T_DERATE_END        850      //should be 10 times in deg C, 800 is 80 deg C
 
+
+#define MIN_REGEN_RPM 1000.0f // To apply rules, Minimum RPM for regenerative braking
+
+
 /* ================================================================
  *  PWM FREQUENCY CONFIGURATION
  * ================================================================ */
@@ -193,10 +212,17 @@
 /* ================================================================
  *  ADC Conversion Constants (Hardware-specific)
  * ================================================================ */
+#ifdef Discrete_Inverter
 #define ACAPLSB -0.05148007812f //-0.1031436f   // ACAPLSB = 3.3/15.626e-3/adc1_range
 #define DCVPLSB 2.21972f //0.00897f       // DCVPLSB = 451*3.3/adc3_range
 #define DCAPLSB 0.0402930f     // DCAPLSB = 3.3/20e-3/adc1_range
+#endif
 
+#ifdef Module_Inverter
+#define ACAPLSB -0.1031436f   // ACAPLSB = 3.3/15.626e-3/adc1_range
+#define DCVPLSB 0.00897f       // DCVPLSB = 451*3.3/adc3_range
+#define DCAPLSB 0.0402930f     // DCAPLSB = 3.3/20e-3/adc1_range
+#endif
 /* ================================================================
  *  Mathematical Constants
  * ================================================================ */

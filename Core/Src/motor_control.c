@@ -227,6 +227,7 @@ void cal_Idq(float* current_phase, float angle_el, float* Id, float* Iq)
   *Id = cos(angle_el)*I_alpha+sin(angle_el)*I_beta;
 }
 
+// not used
 void get_target_Idq(float Is, float speed_RPM, float* Id, float* Iq)
 {
   float omega_e = (float)speed_RPM * 4 * 2.0f * M_PI / 60.0f;

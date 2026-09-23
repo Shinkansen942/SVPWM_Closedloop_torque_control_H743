@@ -164,7 +164,9 @@ static void handle_state_and_ramp()
       foc.last_percent = 0.0f;
     }
     foc.last_percent = foc.last_percent + delta;
+    //disable ramp limiting
     foc.last_percent = foc.percent_torque_requested;
+
     HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_SET);
     if(motor.voltage_power_supply < 50.0f)
     {
@@ -284,23 +286,59 @@ static void foc_control_step(float *phase_dc, float *Iabc_controller_output)
   #ifdef DISALBE_MOT_OT
   temp_derate = _constrain(((float)abs(T_Mot)-(float)T_DERATE_END)/(T_DERATE_START-T_DERATE_END),0.0f,1.0f);
   #endif
-
-  // TO-DO! add regen logic here
-
-  foc.last_percent = _constrain(foc.last_percent, -temp_derate, temp_derate);
-  float target_Is = motor.max_current * foc.last_percent;
-  foc.target_Iq = target_Is;
-  foc.target_Id = 0.0f;
-
+ 
+  //calculate Id and Iq from phase currents
   float Id, Iq;
   cal_Idq(foc.current_phase, _electricalAngle(foc.angle_now, motor.pole_pairs), &Id, &Iq);
   foc.filtered_Iq = LowPassFilter_operator(Iq, &filter_current_Iq);
   foc.filtered_Id = LowPassFilter_operator(Id, &filter_current_Id);
 
-  float Vd_decoupling = (-1.0f)*(4*foc.filtered_RPM*2*M_PI/60)*motor.Lq*foc.filtered_Iq;
-  float Vq_decoupling = (4*foc.filtered_RPM*2*M_PI/60)*(motor.Ld*foc.filtered_Id+motor.flux_linkage_m);
-  Vq_decoupling = _constrain(Vq_decoupling, -motor.voltage_limit, motor.voltage_limit);
-  Vd_decoupling = _constrain(Vd_decoupling, -motor.voltage_limit, motor.voltage_limit);
+
+  // TO-DO! add regen logic here
+  if (foc.enable_regen)
+  {
+    float percent = foc.last_percent;
+    //T-N Quadrant regen logic
+    int T_sign = percent > 0.0f ? 1 : -1;
+    int Speed_sign = foc.filtered_RPM > 0.0f ? 1 : -1;
+    if (T_sign != Speed_sign)
+    {
+      percent = 0.0f;
+    }
+
+    //LCSP curve
+    
+    
+    //slew rate limit
+    float delta = percent - foc.last_percent;
+    delta = _constrain(delta, -foc.max_ramp, foc.max_ramp);
+    percent = foc.last_percent + delta;
+
+    //speed constraint
+    float speed_derate = _constrain(((float)abs(foc.filtered_RPM)-(float)T_DERATE_END)/(T_DERATE_START-T_DERATE_END),0.0f,1.0f);
+    percent = _constrain(percent, -speed_derate, speed_derate);
+    //For safty
+    if(abs(foc.filtered_RPM) < abs(MIN_REGEN_RPM))
+    {
+      percent = 0.0f;
+    }
+
+    foc.last_percent = percent;
+  }
+  //Power limitimg
+
+
+  // calculate target Id and Iq based on last_percent and field weakening / MTPA control
+
+  foc.last_percent = _constrain(foc.last_percent, -temp_derate, temp_derate);
+
+  float target_Is = motor.max_current * foc.last_percent;
+  foc.target_Iq = target_Is;
+  foc.target_Id = 0.0f;
+
+  #ifdef Torque_Control
+  foc.target_Iq = Torque_convertion(float last_percent, float foc.filtered_Id);
+  #endif
 
   foc.Id_fw = 0.0f;
   foc.Iq_fw = foc.target_Iq;
@@ -324,18 +362,18 @@ static void foc_control_step(float *phase_dc, float *Iabc_controller_output)
   #endif
 
   float Id_flux_control = foc.Id_fw < foc.Id_MTPA ? foc.Id_fw : foc.Id_MTPA;
-  // foc.target_Id = _constrain(Id_flux_control,(-MAX_FLUX_ID)*fabsf(foc.last_percent)*4.0f,0.0f);
   foc.target_Id = Id_flux_control;
-  // if(filtered_RPM > motor.voltage_power_supply/(motor.electrical_constant+0.02f) && foc.last_percent == 0.0f)
-  // {
-  //   foc.target_Iq = -1.0f * _sign(filtered_RPM);
-  // }
-  // foc.target_Id = Id_flux_control;
+
   float max_Iq = sqrtf(motor.max_current*motor.max_current - foc.target_Id*foc.target_Id);
   foc.target_Iq = _constrain(foc.target_Iq, -max_Iq,max_Iq);
   #ifdef OVERSPEED_PROT
   foc.target_Iq = foc.Id_fw<-MAX_TORQUE_FW_ID?0.0f:foc.target_Iq;
   #endif
+
+  float Vd_decoupling = (-1.0f)*(4*foc.filtered_RPM*2*M_PI/60)*motor.Lq*foc.filtered_Iq;
+  float Vq_decoupling = (4*foc.filtered_RPM*2*M_PI/60)*(motor.Ld*foc.filtered_Id+motor.flux_linkage_m);
+  Vq_decoupling = _constrain(Vq_decoupling, -motor.voltage_limit, motor.voltage_limit);
+  Vd_decoupling = _constrain(Vd_decoupling, -motor.voltage_limit, motor.voltage_limit);
 
   foc.Iq_controller_output = PID_operator(foc.target_Iq - foc.filtered_Iq, &pid_controller_current_Iq);
   foc.Id_controller_output = PID_operator(foc.target_Id - foc.filtered_Id, &pid_controller_current_Id);

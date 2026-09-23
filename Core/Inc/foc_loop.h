@@ -29,6 +29,7 @@ typedef struct {
     float const flux_linkage_m;        // PM flux linkage    (Wb)
     float const electrical_constant;   // Back-EMF constant  (V/(rad/s))
     float const max_current;           // Phase current limit (A)
+    float const max_Torque;            // Max torque (Nm) s
     int   const pole_pairs;            // Number of pole pairs
     int   const dir;                   // Rotation direction (anti clockwise direction is 1, clockwise is -1)
     float const Ts;                    // Control-loop period (s)

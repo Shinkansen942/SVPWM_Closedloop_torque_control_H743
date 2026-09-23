@@ -97,10 +97,11 @@ motor_params_t motor = {
     .Rs = 0.126f,                    // Stator resistance  (Ohm)
     .Ld = 2.49f * 0.0001f,          // D-axis inductance  (H)
     .Lq = 3.8f * 0.0001f,           // Q-axis inductance  (H)
-    .flux_linkage_m = 4.75f * 0.01f, // PM flux linkage   (Wb)
+    .flux_linkage_m = 0.06042f,     //4.75f * 0.01f, // PM flux linkage   (Wb)
     .electrical_constant = 0.031f,   // Back-EMF constant  (V/(rad/s))
-    .max_current = 70,               // Phase current limit (A)
-    .pole_pairs = 1,
+    .max_Torque = 25.0f,                    // Max torque (Nm)
+    .max_current = 70.0f,               // Phase current limit (A)
+    .pole_pairs = 1,                 //encoder has same pole pairs as motor, so set to 1
     .dir = 1,                        // +1 CCW, -1 CW
     .Ts = (float)1/FREQ,
 

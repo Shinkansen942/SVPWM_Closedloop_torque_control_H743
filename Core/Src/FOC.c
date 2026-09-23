@@ -17,6 +17,13 @@ const float modulation_ref = 0.9f;
 pidc_t pid_controller_fw = {.P = FWKP, .I = FWKI, .D = PID_D, .output_ramp = PID_RAMP, .limit = 1, .error_prev = 0, .output_prev = 0, .integral_prev = 0};
 extern lpf_t filter_Idfw;
 
+float Torque_convertion(float last_percent, float Id)
+{
+    float T_cmd = motor.max_Torque * last_percent;
+    float Iq = T_cmd / (1.5f * motor.pole_pairs * (motor.flux_linkage_m + (motor.Ld - motor.Lq) * Id));
+    return Iq;
+}
+
 float field_weaking_control(float rpm, float Iq, float Vd, float Vdc)
 {
     float omega_e = fabsf(rpm * pole_multipler * 2.0f * M_PI / 60.0f);
