@@ -197,12 +197,21 @@ int main(void)
   // --- Build temperature lookup tables (Mot_Conv, Inv_Conv) ---
   for (size_t i = 0; i < 1024; i++)
   {
+    #ifdef MODULE_INV
+    //-----For new ENC_Temp board-----//
+    // float x = 3300*i/1024;
+    // Mot_Conv[i] = (int16_t)((float)((-419.7*x/1000+294.58)*10));
+    // Mot_Conv[i] = (int16_t)((float)(230.36*x*x−716.01*x+389.57)*10);
+    // OR
+    Mot_Conv[i] = (int16_t)((float)(10/3.795)*(float)(-1000+((-0.55*2200+((1.1*2200*i)/(1024)))/(0.55-1.01-(1.1*i/1024)))));
+    //-------------END----------------//
+    #endif
     float voltage = (float)(3.3*i/1024);
     // Mot_Conv[i] = (int16_t)10*((float)(1650-(3300*i/1024))/Mot_Curr/3.795-1000/3.795);
     // Mot_Conv[i] = (int16_t)10*((float)(3300*i/1024)/Mot_Curr/3.795-1000/3.795);
 
     Inv_Conv[i] = (int16_t)10*(float)((2000*voltage-3300)/((3.3-voltage)*3.8505));
-    Mot_Conv[i] = (int16_t)10*((float)(0.5*(3300*i/1024))/Mot_Curr/3.795-1000/3.795);
+    // Mot_Conv[i] = (int16_t)10*((float)(0.5*(3300*i/1024))/Mot_Curr/3.795-1000/3.795);
     // if (Mot_Conv[i] < 0)
     // {
     //   Mot_Conv[i] = 0;

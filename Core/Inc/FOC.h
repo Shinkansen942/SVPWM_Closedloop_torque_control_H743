@@ -1,7 +1,9 @@
 #ifndef __FOC_H__
 #define __FOC_H__
 
-float Torque_convertion(float T_max, float last_percent, float Id);
+float Torque_convertion(float last_percent, float Id);
+
+float Regen_control(float last_percent, float rpm, float Vdc);
 
 float field_weaking_control(float rpm, float Iq, float Vd, float Vdc);
 

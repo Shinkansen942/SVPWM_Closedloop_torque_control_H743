@@ -233,8 +233,11 @@ static void update_encoder_and_voltage(uint16_t *adc2, uint16_t *adc3)
   }
 
   foc.angle_now = _normalizeAngle(foc.angle_now);
-
+  #ifdef MAX_600V
+  voltage_power_supply = (float)ADC3_arr[0]*DCVPLSB* 11/8;  //FR
+  #else
   motor.voltage_power_supply = (float)adc3[0] * DCVPLSB;
+  #endif
   motor.voltage_limit = motor.voltage_power_supply;
 
   float angular_vel = 0.0f;
@@ -297,33 +300,7 @@ static void foc_control_step(float *phase_dc, float *Iabc_controller_output)
   // TO-DO! add regen logic here
   if (foc.enable_regen)
   {
-    float percent = foc.last_percent;
-    //T-N Quadrant regen logic
-    int T_sign = percent > 0.0f ? 1 : -1;
-    int Speed_sign = foc.filtered_RPM > 0.0f ? 1 : -1;
-    if (T_sign != Speed_sign)
-    {
-      percent = 0.0f;
-    }
-
-    //LCSP curve
-    
-    
-    //slew rate limit
-    float delta = percent - foc.last_percent;
-    delta = _constrain(delta, -foc.max_ramp, foc.max_ramp);
-    percent = foc.last_percent + delta;
-
-    //speed constraint
-    float speed_derate = _constrain(((float)abs(foc.filtered_RPM)-(float)T_DERATE_END)/(T_DERATE_START-T_DERATE_END),0.0f,1.0f);
-    percent = _constrain(percent, -speed_derate, speed_derate);
-    //For safty
-    if(abs(foc.filtered_RPM) < abs(MIN_REGEN_RPM))
-    {
-      percent = 0.0f;
-    }
-
-    foc.last_percent = percent;
+    foc.last_percent = Regen_control(foc.last_percent, foc.filtered_RPM, motor.voltage_limit);
   }
   //Power limitimg
 
@@ -336,8 +313,8 @@ static void foc_control_step(float *phase_dc, float *Iabc_controller_output)
   foc.target_Iq = target_Is;
   foc.target_Id = 0.0f;
 
-  #ifdef Torque_Control
-  foc.target_Iq = Torque_convertion(float last_percent, float foc.filtered_Id);
+  #ifdef TORQUE_CONTROL
+  foc.target_Iq = Torque_convertion(foc.last_percent, foc.filtered_Id);
   #endif
 
   foc.Id_fw = 0.0f;
@@ -345,11 +322,11 @@ static void foc_control_step(float *phase_dc, float *Iabc_controller_output)
   foc.Id_MTPA = 0.0f;
 
   #ifdef FIELD_WEAKENING
-  foc.Id_fw = field_weaking_control(fabsf(foc.filtered_RPM), fabsf(foc.filtered_Iq), fabsf(foc.Iq_controller_output), motor.voltage_limit);
+  foc.Id_fw = field_weaking_control(fabsf(foc.filtered_RPM), fabsf(foc.filtered_Iq), fabsf(foc.Id_controller_output), motor.voltage_limit);
   #endif
 
   #ifdef MTPA
-  foc.Id_MTPA = MTPA_control(fabsf(filtered_Iq));
+  foc.Id_MTPA = MTPA_control(fabsf(foc.filtered_Iq));
   #endif
 
   #ifdef FIELD_WEAKENING_ANGLE
@@ -378,7 +355,7 @@ static void foc_control_step(float *phase_dc, float *Iabc_controller_output)
   foc.Iq_controller_output = PID_operator(foc.target_Iq - foc.filtered_Iq, &pid_controller_current_Iq);
   foc.Id_controller_output = PID_operator(foc.target_Id - foc.filtered_Id, &pid_controller_current_Id);
 
-  #ifdef Decouopling
+  #ifdef DECOUPLING
   // Decoupling
   foc.Id_controller_output += Vd_decoupling;
   foc.Iq_controller_output += Vq_decoupling;

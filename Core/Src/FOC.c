@@ -1,4 +1,5 @@
 #include "FOC.h"
+#include <algorithm>
 #include <math.h>
 #include "config.h"
 #include "motor_control.h"
@@ -22,6 +23,47 @@ float Torque_convertion(float last_percent, float Id)
     float T_cmd = motor.max_Torque * last_percent;
     float Iq = T_cmd / (1.5f * motor.pole_pairs * (motor.flux_linkage_m + (motor.Ld - motor.Lq) * Id));
     return Iq;
+}
+
+float Regen_control(float last_percent, float RPM, float Vdc)
+{
+    float percent = last_percent;
+    //T-N Quadrant regen logic
+    int T_sign = percent >= 0.0f ? 1 : -1;
+    int Speed_sign = RPM >= 0.0f ? 1 : -1;
+    if (T_sign != Speed_sign)
+    {
+      return 0.0f;
+    }
+
+    //LCSP curve
+    
+
+    //Over Charge Protection
+    float Vdc_upper_limit = Vdc * Vdc_upper_limit_scale; //4.2*0.98 = 4.116V
+    float Vdc_lower_limit = Vdc * Vdc_lower_limit_scale; //4.2*0.90 = 3.78V
+    float Vdc_derate = _constrain(((float)Vdc-(float)Vdc_upper_limit)/(Vdc_lower_limit-Vdc_upper_limit),0.0f,1.0f);
+    // percent = _constrain(percent, -Vdc_derate, Vdc_derate);
+
+    //speed constraint
+    //start derate at low speed, end derate at MIN_REGEN_RPM
+    float speed_derate = _constrain(((float)abs(RPM)-(float)RPM_DERATE_END)/(RPM_DERATE_START-RPM_DERATE_END),0.0f,1.0f);
+    // percent = _constrain(percent, -speed_derate, speed_derate);
+    //For safty
+    if(abs(foc.filtered_RPM) < abs(MIN_REGEN_RPM))
+    {
+      return 0.0f;
+    }
+
+     //slew rate limit
+    float delta = percent - last_percent;
+    delta = _constrain(delta, -foc.max_ramp, foc.max_ramp);
+    percent = last_percent + delta;
+
+    float derate = speed_derate < Vdc_derate ? speed_derate : Vdc_derate;
+    percent = _constrain(percent, -derate, derate);
+
+    return percent;
 }
 
 float field_weaking_control(float rpm, float Iq, float Vd, float Vdc)

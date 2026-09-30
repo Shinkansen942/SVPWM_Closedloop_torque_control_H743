@@ -86,9 +86,11 @@ void setPhaseVoltage(float Uq,float Ud, float angle_el, TIM_TypeDef * TIM_BASE,f
   float Ua = Ualpha;
   float Ub = -0.5f * Ualpha + _SQRT3_2 * Ubeta;
   float Uc = -0.5f * Ualpha - _SQRT3_2 * Ubeta;
+  // For DC offset corretion
   Ua -= Va;
   Ub -= Vb;
   Uc -= Vc;
+  //Check for Duty scaling
   float Da = _constrain((Ua / motor.voltage_power_supply+1)/2,0.0f,1.0f);
   float Db = _constrain((Ub / motor.voltage_power_supply+1)/2,0.0f,1.0f);
   float Dc = _constrain((Uc / motor.voltage_power_supply+1)/2,0.0f,1.0f);

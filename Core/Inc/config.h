@@ -16,7 +16,7 @@
 #define VQ_LEQ_0        //define to use Vq less than 0
 #define MIDDLE_CLAMP    //define to use middle clamp
 #define SVPWM           //define to use SVPWM
-#define Decouopling    //define to enable decoupling in current controller
+#define DECOUPLING    //define to enable decoupling in current controller
 #define ANTI_WINDUP     //define to enable anti windup in PID controllers
 #define FIELD_WEAKENING //define to enable field weakening control
 // #define FIELD_WEAKENING_ANGLE // define to enable field weakening angle control
@@ -25,7 +25,7 @@
 // #define OVERSPEED_PROT  //define to enable overspeed protection
 #define FW_STARTUP_ID_FIX   //define to enable fixed d-axis current during field weakening startup
 // #define PERMANENT_FLUX      //define to always apply maximum flux weakening current
-#define Torque_Control      //define to enable torque convertion based on last_percent and Id
+#define TORQUE_CONTROL      //define to enable torque convertion based on last_percent and Id
 
 
 /* ================================================================
@@ -34,9 +34,9 @@
 
  // #define Discrete_Inverter
 
-#ifndef Discrete_Inverter
+#ifndef DISCRETE_INV
 
-#define Module_Inverter
+#define MODULE_INV
 
 #endif
 
@@ -128,9 +128,13 @@
 #define T_DERATE_START      700      //should be 10 times in deg C, 500 is 50 deg C
 #define T_DERATE_END        850      //should be 10 times in deg C, 800 is 80 deg C
 
-
+//For regen control
+#define RPM_DERATE_START      2000      //should be in RPM, 1000 is 1000RPM
+#define RPM_DERATE_END        1000      //should be in RPM, 12000 is 12000RPM
 #define MIN_REGEN_RPM 1000.0f // To apply rules, Minimum RPM for regenerative braking
 
+#define Vdc_upper_limit_scale 0.98f //4.2*0.98 = 4.116V
+#define Vdc_lower_limit_scale 0.90f //4.2*0.90
 
 /* ================================================================
  *  PWM FREQUENCY CONFIGURATION
@@ -167,6 +171,15 @@
 #define DCTF    0.04783f
 #define FWTF    0.04783f
 #endif
+
+
+/* ================================================================
+ *  Deadtime CONFIGURATION
+ * ================================================================ */
+// Deadtime can be adjusted in tim.c
+// sBreakDeadTimeConfig.DeadTime
+// the current setting is 0x7f
+
 
 /* ================================================================
  *  MOTOR-SPECIFIC PARAMETERS - Configuration per Motor Type
@@ -212,13 +225,13 @@
 /* ================================================================
  *  ADC Conversion Constants (Hardware-specific)
  * ================================================================ */
-#ifdef Discrete_Inverter
+#ifdef DISCRETE_INV
 #define ACAPLSB -0.05148007812f //-0.1031436f   // ACAPLSB = 3.3/15.626e-3/adc1_range
 #define DCVPLSB 2.21972f //0.00897f       // DCVPLSB = 451*3.3/adc3_range
 #define DCAPLSB 0.0402930f     // DCAPLSB = 3.3/20e-3/adc1_range
 #endif
 
-#ifdef Module_Inverter
+#ifdef MODULE_INV
 #define ACAPLSB -0.1031436f   // ACAPLSB = 3.3/15.626e-3/adc1_range
 #define DCVPLSB 0.00897f       // DCVPLSB = 451*3.3/adc3_range
 #define DCAPLSB 0.0402930f     // DCAPLSB = 3.3/20e-3/adc1_range
