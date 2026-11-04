@@ -5,12 +5,9 @@
  *      Author: hht
  */
 #include "lowpass_filter.h"
-#include "foc_loop.h"
-
-extern motor_params_t motor;
 
 float LowPassFilter_operator(float x, struct LowPassFilter* filter){
-	float dt = motor.Ts;
+	float dt = filter->Ts;
 	float alpha = filter->Tf/(filter->Tf + dt);
 	float y = alpha*filter->y_prev + (1.0f - alpha)*x;
 	if (y == y)

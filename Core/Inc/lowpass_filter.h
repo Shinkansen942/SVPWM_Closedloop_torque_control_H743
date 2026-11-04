@@ -10,6 +10,7 @@
 
 typedef struct LowPassFilter{
 	float Tf; //!< 低通滤波时间常数
+	float Ts; //!< 取样周期 (s)，由持有该滤波器的模块初始化
 //	unsigned long timestamp_prev;  //!< 最后执行时间戳
 	float y_prev; //!< 上一个循环中的过滤后的值
 } lpf_t;

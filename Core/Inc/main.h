@@ -31,8 +31,7 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "motor_control.h"
-#include "sincos_encoder.h"
+#include "foc_math.h"
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>

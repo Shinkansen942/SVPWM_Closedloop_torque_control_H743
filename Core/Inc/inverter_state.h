@@ -57,5 +57,6 @@ extern INV_Errortypedef  error_state;
 /* --------------- Public Functions --------------- */
 void Enter_ERROR_State(INV_Errortypedef error);
 void Enter_READY_State(void);
+void foc_state_update(void);   // [0] per-cycle state / torque-request handling (FOC ISR)
 
 #endif /* INC_INVERTER_STATE_H_ */

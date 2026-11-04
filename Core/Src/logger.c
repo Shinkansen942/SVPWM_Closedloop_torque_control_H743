@@ -9,7 +9,7 @@ RTC_TimeTypeDef log_time;
 uint8_t last_sec = 0;
 uint16_t log_subsec = 0;
 static uint32_t prev_new_file = 0;
-static uint32_t prev_sd = 0;
+uint32_t prev_sd = 0;            // global for Live Watch (debug)
 uint8_t got_date = 0;
 uint8_t last_got_date = 0;
 int max_sd_buf = 0;

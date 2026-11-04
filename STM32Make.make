@@ -75,7 +75,6 @@ endif
 ######################################
 # C sources
 C_SOURCES =  \
-Core/Src/FOC.c \
 Core/Src/PLL/PLL.c \
 Core/Src/PLL/PLL_data.c \
 Core/Src/PLL/rt_nonfinite.c \
@@ -83,11 +82,17 @@ Core/Src/adc.c \
 Core/Src/as5048a.c \
 Core/Src/can_app.c \
 Core/Src/crc.c \
-Core/Src/current_sense.c \
 Core/Src/dma.c \
 Core/Src/fdcan.c \
+Core/Src/foc_current_ctrl.c \
 Core/Src/foc_loop.c \
-Core/Src/foc_utils.c \
+Core/Src/foc_math.c \
+Core/Src/foc_modulation.c \
+Core/Src/foc_protection.c \
+Core/Src/foc_sensing.c \
+Core/Src/foc_telemetry.c \
+Core/Src/foc_torque_cmd.c \
+Core/Src/foc_transform.c \
 Core/Src/gpio.c \
 Core/Src/hw_callbacks.c \
 Core/Src/i2c.c \
@@ -96,11 +101,9 @@ Core/Src/logger.c \
 Core/Src/lowpass_filter.c \
 Core/Src/main.c \
 Core/Src/mdma.c \
-Core/Src/motor_control.c \
 Core/Src/pid.c \
 Core/Src/rtc.c \
 Core/Src/sdmmc.c \
-Core/Src/sincos_encoder.c \
 Core/Src/stm32h7xx_hal_msp.c \
 Core/Src/stm32h7xx_it.c \
 Core/Src/syscalls.c \

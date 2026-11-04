@@ -6,18 +6,17 @@
  */
 
 #include "pid.h"
-#include "motor_control.h"
-#include "foc_loop.h"
-extern motor_params_t motor;
+#include "config.h"      // ANTI_WINDUP
+#include "foc_math.h"    // _constrain
 float PID_operator(float error, struct PIDController* pid){
     // P环
 
     float proportional = pid->P * error;
     // Tustin 散点积分（I环）
-    float integral = pid->integral_prev + pid->I*motor.Ts*0.5f*(error + pid->error_prev);
+    float integral = pid->integral_prev + pid->I*pid->Ts*0.5f*(error + pid->error_prev);
     // integral = _constrain(integral, -pid->limit, pid->limit);
     // D环（微分环节）
-    float derivative = pid->D*(error - pid->error_prev)/motor.Ts;
+    float derivative = pid->D*(error - pid->error_prev)/pid->Ts;
 
 	float output;
     float anit_windup;
@@ -46,11 +45,11 @@ float PID_operator(float error, struct PIDController* pid){
 
     if(pid->output_ramp > 0){
         // 对PID的变化速率进行限制
-        float output_rate = (output - pid->output_prev)/motor.Ts;
+        float output_rate = (output - pid->output_prev)/pid->Ts;
         if (output_rate > pid->output_ramp)
-            output = pid->output_prev + pid->output_ramp*motor.Ts;
+            output = pid->output_prev + pid->output_ramp*pid->Ts;
         else if (output_rate < -pid->output_ramp)
-            output = pid->output_prev - pid->output_ramp*motor.Ts;
+            output = pid->output_prev - pid->output_ramp*pid->Ts;
     }
     // 保存值（为了下一次循环）
     if(output == output)

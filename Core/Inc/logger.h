@@ -58,6 +58,7 @@ extern RTC_TimeTypeDef  log_time;
 extern uint8_t   last_sec;
 extern uint16_t  log_subsec;
 extern uint8_t   got_date;
+extern uint32_t  prev_sd;        // last SD write tick (debug / Live Watch)
 
 extern FIL MyFile;
 

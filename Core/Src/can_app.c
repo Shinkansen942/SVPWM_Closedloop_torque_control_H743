@@ -8,7 +8,6 @@
 #include "canid.h"
 #include "config.h"
 #include "pid.h"
-#include "lowpass_filter.h"
 #include "rtc.h"
 #include "inverter_state.h"
 #include <stdint.h>
@@ -16,6 +15,9 @@
 #include <math.h>
 #include "time.h"
 #include "foc_loop.h"
+#include "foc_current_ctrl.h"   // current_ctrl_pid_*()
+#include "foc_torque_cmd.h"     // torque_cmd_preset_fw_filter()
+#include "foc_protection.h"     // protection_reset()
 
 /* ================================================================
  *  Extern declarations – variables defined in other modules
@@ -28,17 +30,6 @@ extern motor_params_t motor;
 extern foc_state_t foc;
 extern float    Mot_Curr;
 uint32_t indexMusic = 0;
-
-// --- OC / Encoder fault buffers (from main.c) ---
-extern protection_t prot;
-
-// --- Low-pass filters (from main.c) ---
-extern lpf_t filter_Idfw;
-
-// --- PID controllers (from main.c) ---
-extern pidc_t pid_controller_current_Iq;
-extern pidc_t pid_controller_current_Id;
-extern pidc_t pid_controller_current_Iabc[3];
 
 // --- Temperature variables & lookup tables (from main.c) ---
 extern telemetry_t telem;
@@ -289,47 +280,47 @@ void CAN_Send_Perameter(void)
   {
     case 0:
       head = 0x1;
-      val = pid_controller_current_Iq.P;
+      val = current_ctrl_pid_iq()->P;
       break;
 
     case 1:
       head = 0x2;
-      val = pid_controller_current_Iq.I;
+      val = current_ctrl_pid_iq()->I;
       break;
 
     case 2:
       head = 0x3;
-      val = pid_controller_current_Iq.D;
+      val = current_ctrl_pid_iq()->D;
       break;
 
     case 3:
       head = 0x11;
-      val = pid_controller_current_Id.P;
+      val = current_ctrl_pid_id()->P;
       break;
 
     case 4:
       head = 0x12;
-      val = pid_controller_current_Id.I;
+      val = current_ctrl_pid_id()->I;
       break;
 
     case 5:
       head = 0x13;
-      val = pid_controller_current_Id.D;
+      val = current_ctrl_pid_id()->D;
       break;
 
     case 6:
       head = 0x21;
-      val = pid_controller_current_Iabc[0].P;
+      val = current_ctrl_pid_dc(0)->P;
       break;
 
     case 7:
       head = 0x22;
-      val = pid_controller_current_Iabc[0].I;
+      val = current_ctrl_pid_dc(0)->I;
       break;
 
     case 8:
       head = 0x23;
-      val = pid_controller_current_Iabc[0].D;
+      val = current_ctrl_pid_dc(0)->D;
       break;
 
     default:
@@ -400,35 +391,14 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
             foc.percent_torque_requested = 0;
             foc.enable_hw_oc = 1;
 
-            // Initialize hardware overcurrent protection buffer
-            for (size_t i = 0; i < HW_OC_TIME; i++)
-            {
-              prot.oc_buf[i] = 0;
-            }
-            prot.oc_sum = 0;
-            prot.oc_index = 0;
-
-            // Initialize software overcurrent protection buffer
-            prot.soft_oc_sum = 0;
-            prot.soft_oc_index = 0;
-            for (size_t i = 0; i < SOFT_OC_TIME; i++)
-            {
-              prot.soft_oc_buf[i] = 0;
-            }
-
-            // Initialize encoder fault detection buffer
-            prot.enc_sum = 0;
-            prot.enc_index = 0;
-            for (size_t i = 0; i < ENC_TIME; i++)
-            {
-              prot.enc_buf[i] = 0;
-            }
+            // Initialize HW-OC / soft-OC / encoder fault detection buffers
+            protection_reset();
 
             // Startup Id filter fix for high RPM conditions
             #ifdef FW_STARTUP_ID_FIX
             if (fabsf(foc.filtered_RPM) > 6000.0f)
             {
-              filter_Idfw.y_prev = -40.0f;
+              torque_cmd_preset_fw_filter(-40.0f);
             }
             #endif
 
@@ -516,47 +486,47 @@ void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo1ITs)
         switch (RxData1[0])
         {
         case 0x1:
-          pid_controller_current_Iq.P = val;
+          current_ctrl_pid_iq()->P = val;
           break;
 
         case 0x2:
-          pid_controller_current_Iq.I = val;
+          current_ctrl_pid_iq()->I = val;
           break;
 
         case 0x3:
-          pid_controller_current_Iq.D = val;
+          current_ctrl_pid_iq()->D = val;
           break;
 
         case 0x11:
-          pid_controller_current_Id.P = val;
+          current_ctrl_pid_id()->P = val;
           break;
 
         case 0x12:
-          pid_controller_current_Id.I = val;
+          current_ctrl_pid_id()->I = val;
           break;
 
         case 0x13:
-          pid_controller_current_Id.D = val;
+          current_ctrl_pid_id()->D = val;
           break;
 
         case 0x21:
           for (size_t i = 0; i < 3; i++)
           {
-            pid_controller_current_Iabc[i].P = val;
+            current_ctrl_pid_dc(i)->P = val;
           }
           break;
 
         case 0x22:
           for (size_t i = 0; i < 3; i++)
           {
-            pid_controller_current_Iabc[i].I = val;
+            current_ctrl_pid_dc(i)->I = val;
           }
           break;
 
         case 0x23:
           for (size_t i = 0; i < 3; i++)
           {
-            pid_controller_current_Iabc[i].D = val;
+            current_ctrl_pid_dc(i)->D = val;
           }
           break;
 

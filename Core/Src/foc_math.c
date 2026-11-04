@@ -1,14 +1,11 @@
 /*
-*  foc_utils.c
+*  foc_math.c  (formerly foc_utils.c)
 *  copied from SIMPLEFOC library
 *  Created on: Feb 25, 2025
 *      Author: J.U
 */
-#include "foc_utils.h"
+#include "foc_math.h"
 #include "stm32h7xx_hal.h"
-#ifndef M_PI
-  #define M_PI 3.14159265358979323846
-#endif
 #ifndef _2PI
   #define _2PI (2*M_PI)
 #endif

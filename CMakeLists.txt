@@ -44,19 +44,22 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 
 # Add sources to executable
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
-    Core/Src/FOC.c
     Core/Src/as5048a.c
     Core/Src/can_app.c
-    Core/Src/current_sense.c
+    Core/Src/foc_current_ctrl.c
     Core/Src/foc_loop.c
-    Core/Src/foc_utils.c
+    Core/Src/foc_math.c
+    Core/Src/foc_modulation.c
+    Core/Src/foc_protection.c
+    Core/Src/foc_sensing.c
+    Core/Src/foc_telemetry.c
+    Core/Src/foc_torque_cmd.c
+    Core/Src/foc_transform.c
     Core/Src/hw_callbacks.c
     Core/Src/inverter_state.c
     Core/Src/logger.c
     Core/Src/lowpass_filter.c
-    Core/Src/motor_control.c
     Core/Src/pid.c
-    Core/Src/sincos_encoder.c
     Core/Src/PLL/PLL.c
     Core/Src/PLL/PLL_data.c
     Core/Src/PLL/rt_nonfinite.c

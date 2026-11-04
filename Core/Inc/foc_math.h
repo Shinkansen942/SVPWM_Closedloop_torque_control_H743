@@ -1,13 +1,28 @@
 /*
-* foc_utils.h
-*
-*  Created on: Feb 25, 2025
-*      Author: J.U
-*/
+ * foc_math.h
+ *
+ * Math helpers shared by all FOC modules:
+ *   - fast sin / cos / atan2 (lookup table, copied from SimpleFOC)
+ *   - _constrain / _sign macros and sqrt(3) constants
+ *
+ * Formerly foc_utils.h + the macro section of motor_control.h.
+ */
 
-#ifndef __FOC_UTILS_H__
-#define __FOC_UTILS_H__
+#ifndef INC_FOC_MATH_H_
+#define INC_FOC_MATH_H_
+
 #include <math.h>
+
+#ifndef M_PI
+  #define M_PI 3.14159265358979323846
+#endif
+
+#define _constrain(amt,low,high) ((amt)<(low)?(low):((amt)>(high)?(high):(amt)))
+#define _sign(x) ((x)>0?1:((x)<0?-1:0))
+#define _SQRT3 1.73205080757f
+#define _SQRT3_2 0.86602540378f
+#define _1_SQRT3 0.57735026919f
+#define _2_SQRT3 1.15470053838f
 
 /**
  *  Function approximating the sine calculation by using fixed size array
@@ -31,14 +46,9 @@ float _cos(float a);
 void _sincos(float a, float* s, float* c);
 
 /**
- * Function approximating atan2 
- * 
+ * Function approximating atan2
+ *
  */
 float _atan2(float y, float x);
 
-/**
- * normalizing radian angle to [0,2PI]
- * @param angle - angle to be normalized
- */
-
-#endif /* __SINCOS_ENCODER_H_ */
+#endif /* INC_FOC_MATH_H_ */
