@@ -1128,7 +1128,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     log_buf[wr_log_buf_num][wr_log_index%3600].LGRPM = (int16_t) roundf(filtered_RPM);
     log_buf[wr_log_buf_num][wr_log_index%3600].LGID = (int16_t) roundf(filtered_Id*100);
     log_buf[wr_log_buf_num][wr_log_index%3600].LGIQ = (int16_t) roundf(filtered_Iq*10);
-    log_buf[wr_log_buf_num][wr_log_index%3600].LGZERO = (uint16_t) soft_oc_sum;
+    log_buf[wr_log_buf_num][wr_log_index%3600].LGZERO = (uint16_t) level_1_soft_oc_sum;
     log_buf[wr_log_buf_num][wr_log_index%3600].LGDCIU = (int16_t) roundf(target_Id*100);
     log_buf[wr_log_buf_num][wr_log_index%3600].LGDCIV = (int16_t) roundf(target_Iq*100);
     log_buf[wr_log_buf_num][wr_log_index%3600].LGDCIW = (int16_t) roundf(current_phase_dc[2]*100);
@@ -1296,11 +1296,18 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
             oc_sum = 0;
             oc_index = 0;
 
-            soft_oc_sum = 0;
-            soft_oc_index = 0;
-            for (size_t i = 0; i < SOFT_OC_TIME; i++)
+            level_1_soft_oc_sum = 0;
+            level_1_soft_oc_index = 0;
+            for (size_t i = 0; i < LEVEL_1_SOFT_OC_TIME; i++)
             {
-              soft_oc_buf[i] = 0;
+              level_1_soft_oc_buf[i] = 0;
+            }
+
+            level_2_soft_oc_sum = 0;
+            level_2_soft_oc_index = 0;
+            for (size_t i = 0; i < LEVEL_2_SOFT_OC_TIME; i++)
+            {
+              level_2_soft_oc_buf[i] = 0;
             }
 
             enc_sum = 0;
