@@ -46,15 +46,15 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     Core/Src/as5048a.c
     Core/Src/can_app.c
-    Core/Src/foc_current_ctrl.c
-    Core/Src/foc_loop.c
-    Core/Src/foc_math.c
-    Core/Src/foc_modulation.c
-    Core/Src/foc_protection.c
-    Core/Src/foc_sensing.c
-    Core/Src/foc_telemetry.c
-    Core/Src/foc_torque_cmd.c
-    Core/Src/foc_transform.c
+    Core/Src/FOC/foc_current_ctrl.c
+    Core/Src/FOC/foc_loop.c
+    Core/Src/FOC/foc_math.c
+    Core/Src/FOC/foc_modulation.c
+    Core/Src/FOC/foc_protection.c
+    Core/Src/FOC/foc_sensing.c
+    Core/Src/FOC/foc_telemetry.c
+    Core/Src/FOC/foc_torque_cmd.c
+    Core/Src/FOC/foc_transform.c
     Core/Src/hw_callbacks.c
     Core/Src/inverter_state.c
     Core/Src/logger.c

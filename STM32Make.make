@@ -75,6 +75,15 @@ endif
 ######################################
 # C sources
 C_SOURCES =  \
+Core/Src/FOC/foc_current_ctrl.c \
+Core/Src/FOC/foc_loop.c \
+Core/Src/FOC/foc_math.c \
+Core/Src/FOC/foc_modulation.c \
+Core/Src/FOC/foc_protection.c \
+Core/Src/FOC/foc_sensing.c \
+Core/Src/FOC/foc_telemetry.c \
+Core/Src/FOC/foc_torque_cmd.c \
+Core/Src/FOC/foc_transform.c \
 Core/Src/PLL/PLL.c \
 Core/Src/PLL/PLL_data.c \
 Core/Src/PLL/rt_nonfinite.c \
@@ -84,15 +93,6 @@ Core/Src/can_app.c \
 Core/Src/crc.c \
 Core/Src/dma.c \
 Core/Src/fdcan.c \
-Core/Src/foc_current_ctrl.c \
-Core/Src/foc_loop.c \
-Core/Src/foc_math.c \
-Core/Src/foc_modulation.c \
-Core/Src/foc_protection.c \
-Core/Src/foc_sensing.c \
-Core/Src/foc_telemetry.c \
-Core/Src/foc_torque_cmd.c \
-Core/Src/foc_transform.c \
 Core/Src/gpio.c \
 Core/Src/hw_callbacks.c \
 Core/Src/i2c.c \
